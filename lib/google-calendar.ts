@@ -18,12 +18,12 @@ export class GoogleCalendar {
     return res.data;
   }
 
-  // สร้าง RFC3339 พร้อมออฟเซ็ต +07:00 (เวลาไทย) โดยไม่แปลงเป็น UTC
+  // สร้างเวลารูปแบบ RFC3339 พร้อมออฟเซ็ต +07:00 (เวลาไทย) โดยไม่แปลง UTC
   async createEvent(opts: {
     summary: string;
     date: string;   // "YYYY-MM-DD"
     start: string;  // "HH:mm"
-    end?: string;   // "HH:mm" (ไม่ใส่ = +60 นาที)
+    end?: string;   // "HH:mm" (ไม่ส่ง = +60 นาที)
   }) {
     const startRFC3339 = toRFC3339WithOffset(opts.date, opts.start, 420); // +07:00
     const endRFC3339   = toRFC3339WithOffset(

@@ -4,7 +4,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../[...nextauth]/route";
 import { GoogleCalendar } from "@/lib/google-calendar";
 import OpenAI from "openai";
-import * as tz from "date-fns-tz";
 
 export const runtime = "nodejs";
 
@@ -35,7 +34,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 type AiResult = {
   title: string;   // ชื่ออีเวนต์
   date: string;    // YYYY-MM-DD (ตามเวลาไทย)
-  start: string;   // HH:mm (24 ชม. ตามเวลาไทย)
+  start: string;   // HH:mm (24 ชม., ตามเวลาไทย)
   end?: string;    // HH:mm
 };
 
@@ -48,13 +47,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // วันที่อ้างอิงฝั่งไทย เพื่อให้ AI เข้าใจ "วันนี้/พรุ่งนี้"
-    const now = new Date();
-    const nowInBangkok = tz.utcToZonedTime(now, "Asia/Bangkok");
+    // วันที่อ้างอิงฝั่งไทย (ไม่ใช้ไลบรารี แปลงด้วย locale)
+    const nowThai = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
     const todayStr = [
-      nowInBangkok.getFullYear(),
-      String(nowInBangkok.getMonth() + 1).padStart(2, "0"),
-      String(nowInBangkok.getDate()).padStart(2, "0"),
+      nowThai.getFullYear(),
+      String(nowThai.getMonth() + 1).padStart(2, "0"),
+      String(nowThai.getDate()).padStart(2, "0"),
     ].join("-");
 
     const system = `
@@ -70,7 +68,7 @@ export async function POST(req: Request) {
 - ให้เรียกใช้ฟังก์ชัน set_event เพียงครั้งเดียว พร้อมอาร์กิวเมนต์เป็น JSON ตามสคีมา
 `.trim();
 
-    // ✅ ใช้ Chat Completions + Function Calling เพื่อได้ JSON ที่ชัวร์
+    // ใช้ Chat Completions + Function Calling เพื่อให้ได้ JSON ที่ชัวร์
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -89,7 +87,7 @@ export async function POST(req: Request) {
                 title: { type: "string", description: "ชื่ออีเวนต์" },
                 date:  { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$", description: "วันที่แบบ YYYY-MM-DD (เวลาไทย)" },
                 start: { type: "string", pattern: "^\\d{2}:\\d{2}$", description: "เวลาเริ่ม HH:mm (24 ชม., เวลาไทย)" },
-                end:   { type: "string", pattern: "^\\d{2}:\\d{2}$", description: "เวลาจบ HH:mm (ถ้าไม่ระบุ จะ +60 นาที)" }
+                end:   { type: "string", pattern: "^\\d{2}:\\d{2}$", description: "เวลาจบ HH:mm (ถ้าไม่ระบุ ให้เว้นไว้)" }
               },
               required: ["title", "date", "start"]
             }
@@ -106,7 +104,6 @@ export async function POST(req: Request) {
       const args = choice.message.tool_calls[0].function.arguments;
       parsed = JSON.parse(args) as AiResult;
     } else {
-      // เผื่อกรณี SDK/รุ่นเปลี่ยนพฤติกรรม: พยายามอ่าน content เป็น JSON
       parsed = JSON.parse(choice.message.content ?? "{}") as AiResult;
     }
 
@@ -115,7 +112,6 @@ export async function POST(req: Request) {
     }
 
     // บังคับวันให้ตรงกับ "วันที่ X" ถ้าผู้ใช้ระบุ
-    const nowThai = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
     const forced = coerceDateFromThaiText(text, nowThai);
     if (forced) parsed.date = forced;
 
@@ -126,7 +122,7 @@ export async function POST(req: Request) {
       summary: parsed.title || text,
       date: parsed.date,
       start: parsed.start,
-      end: parsed.end, // ไม่มีก็ปล่อยให้ default +60 นาทีใน lib
+      end: parsed.end, // ไม่มีก็ปล่อยให้ lib เติม +60 นาที
     });
 
     return NextResponse.json({ ok: true, event, ai: parsed });

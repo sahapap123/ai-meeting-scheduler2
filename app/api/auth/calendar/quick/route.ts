@@ -62,17 +62,16 @@ function thaiQuickParse(inputRaw: string, nowThai: Date): AiResult | null {
     dateStr = forced ?? fmtDate(nowThai);
   }
 
-  // 2) time (รองรับ: ทุ่ม/โมงเช้า/โมงเย็น/บ่าย/เที่ยง/เที่ยงคืน และ “ถึง”)
-  let start: string | null = null;
-  let end: string | null = null;
-
-  // split range: “...ถึง...”
+  // 2) time (รองรับ "…ถึง…")
   const parts = s.split(/ถึง/);
-  const startText = parts[0];
-  const endText = parts[1];
 
-  start = parseThaiTime(startText);
-  if (endText) end = parseThaiTime(endText);
+  // ⚠️ ตัดคำว่า “วันที่ X” ออกก่อนส่งเข้า parser เวลา
+  const stripDatePhrase = (t: string) => normDigits(t).replace(/วันที่\s*\d{1,2}/, "");
+  const startText = stripDatePhrase(parts[0] ?? "");
+  const endText   = parts[1] ? stripDatePhrase(parts[1]) : undefined;
+
+  const start = parseThaiTime(startText);
+  const end   = endText ? parseThaiTime(endText) : null;
 
   if (!start) return null;
 
@@ -83,6 +82,7 @@ function thaiQuickParse(inputRaw: string, nowThai: Date): AiResult | null {
     end: end ?? addMinutes(start, 60),
   };
 }
+
 
 function fmtDate(d: Date) {
   const yy = d.getFullYear();
@@ -100,18 +100,18 @@ function addMinutes(hhmm: string, mins: number) {
 
 function parseThaiTime(t: string): string | null {
   const x = t.replace(/\s+/g, "");
+
   // เที่ยง / เที่ยงคืน
   if (/เที่ยงคืน/.test(x)) return "00:00";
-  if (/เที่ยง/.test(x))    return "12:00";
+  if (/เที่ยง(?!คืน)/.test(x)) return "12:00";
 
   // N ทุ่ม (ครึ่ง)
   {
     const m = x.match(/(\d{1,2})ทุ่ม(ครึ่ง)?/);
     if (m) {
-      let n = parseInt(m[1], 10);
-      n = Math.max(1, Math.min(6, n)); // 1–6 ทุ่ม
-      let h = 18 + n;                   // 1 ทุ่ม = 19:00
-      if (h >= 24) h = 0;               // 6 ทุ่ม = 24:00 → 00:00 (วันถัดไปไม่รองรับใน quick)
+      let n = Math.max(1, Math.min(6, parseInt(m[1], 10))); // 1–6 ทุ่ม
+      let h = 18 + n;                                       // 1ทุ่ม=19 …
+      if (h >= 24) h = 0;                                   // 6ทุ่ม = 00:00
       const mm = m[2] ? 30 : 0;
       return `${String(h).padStart(2,"0")}:${String(mm).padStart(2,"0")}`;
     }
@@ -119,13 +119,13 @@ function parseThaiTime(t: string): string | null {
 
   // บ่าย [โมง|N(โมง)?] (ครึ่ง)
   {
-    // บ่ายโมง / บ่ายสอง(ครึ่ง) ...
-    const m = x.match(/บ่าย(?:(โมง)|(\\d{1,2})(?:โมง)?)(ครึ่ง)?/);
+    // ✅ แก้ regex: ใช้ \d ไม่ใช่ \\d
+    const m = x.match(/บ่าย(?:(โมง)|(\d{1,2})(?:โมง)?)(ครึ่ง)?/);
     if (m) {
       let h = 13; // บ่ายโมง
       if (m[2]) {
         const n = Math.max(1, Math.min(11, parseInt(m[2], 10)));
-        h = 12 + n; // บ่ายสอง=14, บ่ายสาม=15, ...
+        h = 12 + n; // บ่ายสอง=14, บ่ายสาม=15 …
       }
       const mm = m[3] ? 30 : 0;
       return `${String(h).padStart(2,"0")}:${String(mm).padStart(2,"0")}`;
@@ -138,19 +138,18 @@ function parseThaiTime(t: string): string | null {
     if (m) {
       let n = Math.max(1, Math.min(12, parseInt(m[1], 10)));
       let h = n;
-      if (m[2] === "เย็น") h = 12 + n; // สี่โมงเย็น=16, ห้าโมงเย็น=17, หกโมงเย็น=18
+      if (m[2] === "เย็น") h = 12 + n; // 4โมงเย็น=16, 5=17, 6=18
       const mm = m[3] ? 30 : 0;
-      // ถ้าไม่ระบุเช้า/เย็นและ n<=11 → ถือเป็นเช้า
-      if (!m[2]) h = n === 12 ? 12 : n;
+      if (!m[2]) h = n === 12 ? 12 : n; // ไม่ระบุ = เช้า
       return `${String(h).padStart(2,"0")}:${String(mm).padStart(2,"0")}`;
     }
   }
 
-  // 24 ชม. เช่น 20:30 / 9:00น.
+  // เวลา 24 ชม. เช่น 20:30 / 9:00
   {
     const m = x.match(/(\d{1,2})[:.](\d{1,2})/);
     if (m) {
-      const h = Math.max(0, Math.min(23, parseInt(m[1], 10)));
+      const h  = Math.max(0, Math.min(23, parseInt(m[1], 10)));
       const mm = Math.max(0, Math.min(59, parseInt(m[2], 10)));
       return `${String(h).padStart(2,"0")}:${String(mm).padStart(2,"0")}`;
     }
@@ -158,6 +157,7 @@ function parseThaiTime(t: string): string | null {
 
   return null;
 }
+
 
 export async function POST(req: Request) {
   try {

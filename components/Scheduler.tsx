@@ -22,16 +22,21 @@ export default function Scheduler({ session }: { session: Session }) {
       const response = await fetch("/api/auth/calendar/quick", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: text }),
+        body: JSON.stringify({ text }),
       });
       const data = await response.json();
 
       if (response.ok && data.event) {
         const successMessage = (
           <span>
-            สร้างนัดหมาย <strong>'{data.event.summary}'</strong> สำเร็จ! ✅{" "}
-            <a href={data.event.htmlLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                (ดูใน Google Calendar)
+            สร้างนัดหมาย <strong>&apos;{data.event.summary}&apos;</strong> สำเร็จ! ✅{" "}
+            <a
+              href={data.event.htmlLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              (ดูใน Google Calendar)
             </a>
           </span>
         );
@@ -66,22 +71,34 @@ export default function Scheduler({ session }: { session: Session }) {
         </CardHeader>
         <CardContent className="p-6 space-y-4">
           <Input
-            id="prompt-input" type="text" placeholder="เช่น ประชุมพรุ่งนี้ 10 โมง หรือ วันนี้ว่างไหม?"
-            value={text} onChange={(e) => setText(e.target.value)}
+            id="prompt-input"
+            type="text"
+            placeholder="เช่น ประชุมพรุ่งนี้ 10 โมง หรือ วันนี้ว่างไหม?"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleClick()}
-            disabled={isLoading} className="h-12 text-base"
+            disabled={isLoading}
+            className="h-12 text-base"
           />
-          <Button onClick={handleClick} disabled={isLoading || text.trim() === ""} className="w-full h-12 text-base font-semibold">
+          <Button
+            onClick={handleClick}
+            disabled={isLoading || text.trim() === ""}
+            className="w-full h-12 text-base font-semibold"
+          >
             {isLoading ? (
-              <span className="flex items-center justify-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> กำลังประมวลผล...</span>
-            ) : ( "ส่งให้ AI วิเคราะห์" )}
+              <span className="flex items-center justify-center">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> กำลังประมวลผล...
+              </span>
+            ) : ("ส่งให้ AI วิเคราะห์")}
           </Button>
           {reply && (
-            <div className={`mt-4 p-4 rounded-lg text-center text-sm border ${
-              typeof reply === 'string' && reply.includes("ผิดพลาด")
-                ? 'bg-red-50/50 border-red-200 text-red-800'
-                : 'bg-green-50/50 border-green-200 text-green-800'
-            }`}>
+            <div
+              className={`mt-4 p-4 rounded-lg text-center text-sm border ${
+                typeof reply === 'string' && reply.includes("ผิดพลาด")
+                  ? 'bg-red-50/50 border-red-200 text-red-800'
+                  : 'bg-green-50/50 border-green-200 text-green-800'
+              }`}
+            >
               {reply}
             </div>
           )}

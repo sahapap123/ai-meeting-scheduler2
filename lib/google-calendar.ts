@@ -18,20 +18,22 @@ export class GoogleCalendar {
     return res.data;
   }
 
+// lib/google-calendar.ts (เฉพาะเมธอด createEvent แก้เป็นแบบนี้)
   async createEvent(opts: { summary: string; start: Date; end: Date; timeZone?: string }) {
     const timeZone = opts.timeZone || "Asia/Bangkok";
+
+    // สร้าง ISO แบบไม่มีโซน (local wall time) เพื่อให้คู่กับ timeZone ได้ตรง
+    const fmt = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:00`;
+
     const res = await this.calendar.events.insert({
       calendarId: "primary",
       requestBody: {
         summary: opts.summary,
-        start: { dateTime: opts.start.toISOString(), timeZone },
-        end:   { dateTime: opts.end.toISOString(),   timeZone },
+        start: { dateTime: fmt(opts.start), timeZone },
+        end:   { dateTime: fmt(opts.end),   timeZone },
       },
     });
     return res.data;
   }
-}
-
-export function createGoogleCalendar(accessToken: string) {
-  return new GoogleCalendar(accessToken);
 }

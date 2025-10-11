@@ -17,6 +17,19 @@ export class GoogleCalendar {
     });
     return res.data;
   }
+
+  async createEvent(opts: { summary: string; start: Date; end: Date; timeZone?: string }) {
+    const timeZone = opts.timeZone || "Asia/Bangkok";
+    const res = await this.calendar.events.insert({
+      calendarId: "primary",
+      requestBody: {
+        summary: opts.summary,
+        start: { dateTime: opts.start.toISOString(), timeZone },
+        end:   { dateTime: opts.end.toISOString(),   timeZone },
+      },
+    });
+    return res.data;
+  }
 }
 
 export function createGoogleCalendar(accessToken: string) {

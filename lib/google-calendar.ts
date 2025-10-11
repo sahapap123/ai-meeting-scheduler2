@@ -1,55 +1,30 @@
 // lib/google-calendar.ts
-import { OAuth2Client } from "google-auth-library";
-import { google, calendar_v3 } from "googleapis";
-import { Session } from "next-auth";
+import { google } from "googleapis";
 
-export class GoogleCalendar {
-    private auth: OAuth2Client;
-    private calendar: calendar_v3.Calendar;
+export type QuickAddedEvent = Awaited<
+  ReturnType<GoogleCalendar["quickAddEvent"]>
+>;
 
-    constructor(session: Session) {
-        this.auth = new OAuth2Client({
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        });
-        this.auth.setCredentials({
-            access_token: session.accessToken as string,
-            refresh_token: session.refreshToken as string,
-        });
-        this.calendar = google.calendar({ version: 'v3', auth: this.auth });
-    }
+class GoogleCalendar {
+  private calendar: ReturnType<typeof google.calendar>;
 
-    async createEvent(eventDetails: { summary: string; startTime: string; endTime: string; }) {
-        try {
-            const response = await this.calendar.events.insert({
-                calendarId: 'primary',
-                requestBody: {
-                    summary: eventDetails.summary,
-                    start: { dateTime: eventDetails.startTime, timeZone: 'Asia/Bangkok' },
-                    end: { dateTime: eventDetails.endTime, timeZone: 'Asia/Bangkok' },
-                },
-            });
-            return response.data;
-        } catch (error) {
-            console.error("Error creating event:", error);
-            throw new Error("Failed to create Google Calendar event.");
-        }
-    }
+  constructor(accessToken: string) {
+    const auth = new google.auth.OAuth2();
+    auth.setCredentials({ access_token: accessToken });
+    this.calendar = google.calendar({ version: "v3", auth });
+  }
 
-    async checkAvailability(startTime: string, endTime: string): Promise<calendar_v3.Schema$Event[]> {
-        try {
-            const response = await this.calendar.events.list({
-                calendarId: 'primary',
-                timeMin: startTime,
-                timeMax: endTime,
-                maxResults: 5,
-                singleEvents: true,
-                orderBy: 'startTime',
-            });
-            return response.data.items || [];
-        } catch (error) {
-            console.error("Error checking availability:", error);
-            throw new Error("Failed to check Google Calendar availability.");
-        }
-    }
+  // เพิ่มเมธอดนี้เพื่อแก้ error ใน smart_query.ts/route.ts
+  async quickAddEvent(text: string) {
+    const res = await this.calendar.events.quickAdd({
+      calendarId: "primary",
+      text,
+    });
+    return res.data; // คืนค่า event ที่ Google สร้างให้
+  }
+}
+
+// helper ให้สร้าง instance แบบสะดวก
+export function createGoogleCalendar(accessToken: string) {
+  return new GoogleCalendar(accessToken);
 }

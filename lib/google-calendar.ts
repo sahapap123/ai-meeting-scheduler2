@@ -1,6 +1,6 @@
 // lib/google-calendar.ts
 import { google } from "googleapis";
-import * as tz from "date-fns-tz";   // ✅ ใช้ namespace import
+import * as tz from "date-fns-tz";
 import { formatISO } from "date-fns";
 
 export class GoogleCalendar {
@@ -24,17 +24,18 @@ export class GoogleCalendar {
   async createEvent(opts: { summary: string; start: Date; end: Date; timeZone?: string }) {
     const timeZone = opts.timeZone || "Asia/Bangkok";
 
-    const startUtc = tz.zonedTimeToUtc(opts.start, timeZone); // ✅
-    const endUtc   = tz.zonedTimeToUtc(opts.end,   timeZone); // ✅
+   const startUtc = tz.zonedTimeToUtc(opts.start, timeZone);
+const endUtc   = tz.zonedTimeToUtc(opts.end,   timeZone);
 
-    const res = await this.calendar.events.insert({
-      calendarId: "primary",
-      requestBody: {
-        summary: opts.summary,
-        start: { dateTime: formatISO(startUtc) }, // e.g. 2025-10-12T07:00:00Z
-        end:   { dateTime: formatISO(endUtc)   },
-      },
-    });
+const res = await this.calendar.events.insert({
+  calendarId: "primary",
+  requestBody: {
+    summary: opts.summary,
+    start: { dateTime: formatISO(startUtc) }, // 2025-10-12T07:00:00Z
+    end:   { dateTime: formatISO(endUtc)   },
+  },
+});
+
     return res.data;
   }
 }

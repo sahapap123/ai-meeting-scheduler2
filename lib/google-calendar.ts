@@ -1,7 +1,7 @@
 // lib/google-calendar.ts
 import { google } from "googleapis";
-import { zonedTimeToUtc } from "date-fns-tz";   // ➊ ADD
-import { formatISO } from "date-fns";           // ➋ ADD
+import * as tz from "date-fns-tz";   // ✅ ใช้ namespace import
+import { formatISO } from "date-fns";
 
 export class GoogleCalendar {
   private calendar: ReturnType<typeof google.calendar>;
@@ -20,28 +20,21 @@ export class GoogleCalendar {
     return res.data;
   }
 
-  // ✅ แก้ให้มั่นใจเรื่องโซนเวลา: local(Asia/Bangkok) -> UTC ก่อนส่ง
+  // ใช้เวลาโลคอล (Asia/Bangkok) -> แปลงเป็น UTC ก่อนส่งให้ Google
   async createEvent(opts: { summary: string; start: Date; end: Date; timeZone?: string }) {
     const timeZone = opts.timeZone || "Asia/Bangkok";
 
-    // แปลง "เวลาโลคอลของไทย" ให้เป็นเวลาจริงใน UTC
-    const startUtc = zonedTimeToUtc(opts.start, timeZone);
-    const endUtc   = zonedTimeToUtc(opts.end,   timeZone);
+    const startUtc = tz.zonedTimeToUtc(opts.start, timeZone); // ✅
+    const endUtc   = tz.zonedTimeToUtc(opts.end,   timeZone); // ✅
 
-    // ส่งเป็น RFC3339 แบบ UTC (มี Z) ให้ Google
     const res = await this.calendar.events.insert({
       calendarId: "primary",
       requestBody: {
         summary: opts.summary,
         start: { dateTime: formatISO(startUtc) }, // e.g. 2025-10-12T07:00:00Z
         end:   { dateTime: formatISO(endUtc)   },
-        // จะใส่ timeZone ประกอบด้วยก็ได้/ไม่ใส่ก็ได้ เมื่อส่งเป็น UTC แล้ว
       },
     });
     return res.data;
   }
-}
-
-export function createGoogleCalendar(accessToken: string) {
-  return new GoogleCalendar(accessToken);
 }

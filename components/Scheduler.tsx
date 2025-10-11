@@ -1,7 +1,7 @@
 // components/Scheduler.tsx
 'use client';
 import React, { useState } from "react";
-import { signOut } from "next-auth/react"; 
+import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,16 +10,24 @@ import { Session } from "next-auth";
 
 export default function Scheduler({ session }: { session: Session }) {
   const [text, setText] = useState("");
-  const [reply, setReply] = useState<string | React.ReactNode>(""); 
+  const [reply, setReply] = useState<string | React.ReactNode>("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleClick = async () => {
     if (text.trim() === "" || isLoading) return;
     setIsLoading(true);
     setReply("AI กำลังวิเคราะห์...");
+
     try {
-      // เราจะใช้ API ของ OpenAI ที่ทำงานได้สมบูรณ์แล้ว
-      const response = await fetch("/api/auth/calendar/quick", {
+      // ถามตาราง/ความว่าง → smart_query, อย่างอื่น → quick (สร้างนัด)
+      const isInfoQuery = /มีประชุม|วันไหนบ้าง|ตาราง|กำหนดการ|ว่างไหม|\?/.test(
+        text.trim()
+      );
+      const endpoint = isInfoQuery
+        ? "/api/auth/calendar/smart_query"
+        : "/api/auth/calendar/quick";
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
@@ -27,7 +35,7 @@ export default function Scheduler({ session }: { session: Session }) {
       const data = await response.json();
 
       if (response.ok && data.event) {
-        const successMessage = (
+        setReply(
           <span>
             สร้างนัดหมาย <strong>&apos;{data.event.summary}&apos;</strong> สำเร็จ! ✅{" "}
             <a
@@ -40,11 +48,10 @@ export default function Scheduler({ session }: { session: Session }) {
             </a>
           </span>
         );
-        setReply(successMessage);
       } else if (response.ok && data.text_response) {
         setReply(data.text_response);
       } else {
-        setReply(`เกิดข้อผิดพลาด: ${data.error || 'Unknown error'}`);
+        setReply(`เกิดข้อผิดพลาด: ${data.error || "Unknown error"}`);
       }
     } catch (error) {
       setReply("เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์");
@@ -73,7 +80,7 @@ export default function Scheduler({ session }: { session: Session }) {
           <Input
             id="prompt-input"
             type="text"
-            placeholder="เช่น ประชุมพรุ่งนี้ 10 โมง หรือ วันนี้ว่างไหม?"
+            placeholder="เช่น ประชุมพรุ่งนี้ 10 โมง หรือ วันนี้มีประชุมไหม?"
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleClick()}

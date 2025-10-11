@@ -10,15 +10,16 @@ export class GoogleCalendar {
     this.calendar = google.calendar({ version: "v3", auth });
   }
 
+  // ใช้ Quick Add ของ Google (optional)
   async quickAddEvent(text: string) {
     const res = await this.calendar.events.quickAdd({
-      calendarId: "primary",
+      calendarId: "primary", // หมายเหตุ: คอมเมนต์ต้องใช้ // แบบนี้ ห้ามพิมพ์ข้อความดิบ
       text,
     });
     return res.data;
   }
 
-  // สร้างเวลารูปแบบ RFC3339 พร้อมออฟเซ็ต +07:00 (เวลาไทย) โดยไม่แปลง UTC
+  // สร้างอีเวนต์โดยกำหนดเวลาแบบ RFC3339 +07:00 (ไม่แปลงเป็น UTC)
   async createEvent(opts: {
     summary: string;
     date: string;   // "YYYY-MM-DD"
@@ -26,7 +27,7 @@ export class GoogleCalendar {
     end?: string;   // "HH:mm" (ไม่ส่ง = +60 นาที)
   }) {
     const startRFC3339 = toRFC3339WithOffset(opts.date, opts.start, 420); // +07:00
-    const endRFC3339   = toRFC3339WithOffset(
+    const endRFC3339 = toRFC3339WithOffset(
       opts.date,
       opts.end ?? add60(opts.start),
       420
@@ -42,9 +43,22 @@ export class GoogleCalendar {
     });
     return res.data;
   }
+
+  // ดึงรายการอีเวนต์ตามช่วงเวลา (RFC3339 +07:00)
+  async listEvents(opts: { timeMin: string; timeMax: string; maxResults?: number }) {
+    const res = await this.calendar.events.list({
+      calendarId: "primary",
+      timeMin: opts.timeMin,
+      timeMax: opts.timeMax,
+      singleEvents: true,
+      orderBy: "startTime",
+      maxResults: opts.maxResults ?? 50,
+    });
+    return res.data.items ?? [];
+  }
 }
 
-// helpers
+// ---------- helpers ----------
 function add60(hhmm: string) {
   const [h, m] = hhmm.split(":").map(Number);
   const d = new Date(2000, 0, 1, h, m);

@@ -89,14 +89,17 @@ export async function POST(req: Request) {
       ? makeLocalDate(parsed.date, parsed.end)
       : new Date(startLocal.getTime() + 60 * 60 * 1000);
 
-   const gc = new GoogleCalendar(session.accessToken);
+console.log("AI parsed ->", parsed);
+  const gc = new GoogleCalendar(session.accessToken);
+// สมมุติ parsed = { date:"2025-10-12", start:"10:00", end:"11:00", title:"..." }
 const event = await gc.createEvent({
   summary: parsed.title || text,
-  date: parsed.date,        // "YYYY-MM-DD" จาก AI
-  start: parsed.start,      // "HH:mm"
-  end: parsed.end,          // ถ้าไม่มีจะ default 60 นาทีใน lib
-  timeZone: "Asia/Bangkok",
+  date: parsed.date,
+  start: parsed.start,
+  end: parsed.end, // ไม่ใส่ก็ได้ เดี๋ยว default +60 นาที
 });
+
+
 
     return NextResponse.json({ ok: true, event, ai: parsed });
   } catch (err: any) {

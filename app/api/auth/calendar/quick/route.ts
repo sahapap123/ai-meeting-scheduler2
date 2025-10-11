@@ -5,11 +5,9 @@ import { authOptions } from "../../[...nextauth]/route";
 import { GoogleCalendar } from "@/lib/google-calendar";
 import OpenAI from "openai";
 
-export const runtime = "nodejs"; // สำคัญ: googleapis ไม่รองรับ edge
+export const runtime = "nodejs"; // สำคัญสำหรับ googleapis
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(req: Request) {
   try {

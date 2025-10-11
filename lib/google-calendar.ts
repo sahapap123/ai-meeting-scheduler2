@@ -10,17 +10,15 @@ export class GoogleCalendar {
     this.calendar = google.calendar({ version: "v3", auth });
   }
 
-  // ใช้ Quick Add ของ Calendar
   async quickAddEvent(text: string) {
     const res = await this.calendar.events.quickAdd({
       calendarId: "primary",
       text,
     });
-    return res.data; // คืน event object
+    return res.data;
   }
 }
 
-// helper เผื่ออยากเรียกแบบฟังก์ชัน
 export function createGoogleCalendar(accessToken: string) {
   return new GoogleCalendar(accessToken);
 }

@@ -8,23 +8,36 @@ import * as tz from "date-fns-tz";
 
 export const runtime = "nodejs";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// บังคับให้วันที่ตรงกับเลขที่ผู้ใช้พิมพ์ ("วันที่ 13", รองรับเลขไทยด้วย)
+function coerceDateFromThaiText(input: string, currentInThai: Date): string | null {
+  const th2ar: Record<string,string> = {"๐":"0","๑":"1","๒":"2","๓":"3","๔":"4","๕":"5","๖":"6","๗":"7","๘":"8","๙":"9"};
+  const norm = input.replace(/[๐-๙]/g, ch => th2ar[ch] ?? ch);
+  const m = norm.match(/วันที่\s*(\d{1,2})/);
+  if (!m) return null;
+
+  const day = Math.min(31, Math.max(1, parseInt(m[1], 10)));
+  const y = currentInThai.getFullYear();
+  const mon = currentInThai.getMonth();
+
+  // เข้าใจตามคนไทย: ถ้าวันที่นั้นใน "เดือนนี้" ผ่านไปแล้ว → ขยับไปเดือนถัดไป
+  let cand = new Date(y, mon, day);
+  const todayMid = new Date(y, mon, currentInThai.getDate());
+  if (cand < todayMid) cand = new Date(y, mon + 1, day);
+
+  const yy = cand.getFullYear();
+  const mm = String(cand.getMonth() + 1).padStart(2, "0");
+  const dd = String(cand.getDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+}
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 type AiResult = {
-  title: string;           // ชื่ออีเวนต์
-  date: string;            // YYYY-MM-DD (โซนเวลาไทย)
-  start: string;           // HH:mm (24 ชม., โซนเวลาไทย)
-  end?: string;            // HH:mm (ถ้าไม่ให้ จะ default 60 นาทีด้านล่าง)
+  title: string;
+  date: string;   // YYYY-MM-DD (ตามเวลาไทย)
+  start: string;  // HH:mm (24 ชม. ตามเวลาไทย)
+  end?: string;   // HH:mm
 };
-
-function makeLocalDate(date: string, hhmm: string) {
-  const [y, m, d] = date.split("-").map(Number);
-  const [hh, mm] = hhmm.split(":").map(Number);
-  // สร้างเป็นเวลา "ตามนาฬิกาไทย" ก่อน แล้วค่อยแปลงเป็น UTC ตอน createEvent
-  return new Date(y, (m - 1), d, hh, mm, 0, 0);
-}
 
 export async function POST(req: Request) {
   try {
@@ -35,7 +48,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // วันที่อ้างอิงฝั่งไทย (เพื่อให้โมเดลคำนวณ "วันนี้/พรุ่งนี้/คืนนี้" ได้ตรง)
+    // วันที่อ้างอิงฝั่งไทย เพื่อให้ AI เข้าใจคำว่า "วันนี้/พรุ่งนี้"
     const now = new Date();
     const nowInBangkok = tz.utcToZonedTime(now, "Asia/Bangkok");
     const todayStr = [
@@ -44,26 +57,22 @@ export async function POST(req: Request) {
       String(nowInBangkok.getDate()).padStart(2, "0"),
     ].join("-");
 
-    // ขอให้โมเดลคืน JSON ที่แน่นอน
     const system = `
-คุณเป็นตัวแปลงภาษาธรรมชาติของคนไทยให้เป็นเวลา.
+คุณเป็นตัวแปลงภาษาธรรมชาติของคนไทยให้เป็นเวลา
 กติกา:
-- รับข้อความสั้น ๆ เช่น "วันนี้สองทุ่ม", "พรุ่งนี้บ่ายสองถึงบ่ายสาม", "เที่ยงคืน", "หกโมงเย็น", "หนึ่งทุ่มครึ่ง"
-- ให้ตีความตามภาษาพูดไทย:
-  • 1 ทุ่ม = 19:00, 2 ทุ่ม = 20:00, ... , 5 ทุ่ม = 23:00, 6 ทุ่ม = 24:00/00:00 (วันถัดไป)
-  • เช้า 6–11 โมง, เย็น 17–18 โมง, บ่าย 13–16 นาฬิกา
-  • "ครึ่ง" = +30 นาที
-  • "เที่ยง" = 12:00, "เที่ยงคืน" = 00:00
-- รองรับตัวเลขไทยและคำไทย (เช่น สองทุ่ม, ๒ทุ่ม)
-- ถ้าไม่ระบุเวลาเสร็จ ให้กำหนดความยาว 60 นาที
-- ให้คำนวณจากวันที่อ้างอิงฝั่งไทย (Asia/Bangkok) วันนี้ = ${todayStr}
+- ตัวอย่าง: "วันนี้สองทุ่ม", "พรุ่งนี้บ่ายสองถึงบ่ายสาม", "เที่ยงคืน", "หกโมงเย็น", "หนึ่งทุ่มครึ่ง", "วันที่ 13 10 โมงเช้า"
+- ตีความภาษาพูดไทย:
+  • 1 ทุ่ม=19:00, 2 ทุ่ม=20:00, 3 ทุ่ม=21:00, 4 ทุ่ม=22:00, 5 ทุ่ม=23:00, 6 ทุ่ม=00:00 (วันถัดไป)
+  • "ครึ่ง" = +30 นาที, "เที่ยง"=12:00, "เที่ยงคืน"=00:00
+  • รองรับเลขไทย (๑๒๓๔) และคำว่า "วันที่ X"
+- ถ้าไม่ระบุเวลาเสร็จ ให้ตั้งระยะ 60 นาที
+- อ้างอิงวันที่ฝั่งไทย (Asia/Bangkok) วันนี้ = ${todayStr}
 - ตอบกลับเป็น JSON เดียวเท่านั้น (ห้ามมีข้อความอื่น)
 รูปแบบ JSON:
 { "title": string, "date": "YYYY-MM-DD", "start": "HH:mm", "end": "HH:mm" }
 `.trim();
 
     const user = `ข้อความ: ${text}`;
-
     const resp = await openai.responses.create({
       model: "gpt-4o-mini",
       input: `${system}\n\n${user}`,
@@ -74,32 +83,27 @@ export async function POST(req: Request) {
     try {
       parsed = JSON.parse(raw) as AiResult;
     } catch {
-      return NextResponse.json(
-        { error: "AI parsing failed", raw },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "AI parsing failed", raw }, { status: 400 });
     }
-
     if (!parsed?.date || !parsed?.start) {
-      return NextResponse.json({ error: "Missing date/start from AI" }, { status: 400 });
+      return NextResponse.json({ error: "Missing date/start from AI", raw }, { status: 400 });
     }
 
-    const startLocal = makeLocalDate(parsed.date, parsed.start);
-    const endLocal = parsed.end
-      ? makeLocalDate(parsed.date, parsed.end)
-      : new Date(startLocal.getTime() + 60 * 60 * 1000);
+    // ⚙️ บังคับให้วันตรงกับเลขที่ผู้ใช้พิมพ์ ("วันที่ X") ถ้ามี
+    const nowThai = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
+    const forced = coerceDateFromThaiText(text, nowThai);
+    if (forced) parsed.date = forced;
 
-console.log("AI parsed ->", parsed);
-  const gc = new GoogleCalendar(session.accessToken);
-// สมมุติ parsed = { date:"2025-10-12", start:"10:00", end:"11:00", title:"..." }
-const event = await gc.createEvent({
-  summary: parsed.title || text,
-  date: parsed.date,
-  start: parsed.start,
-  end: parsed.end, // ไม่ใส่ก็ได้ เดี๋ยว default +60 นาที
-});
+    // (Debug) ดูค่าที่ AI คืนมาและวันที่ที่บังคับแล้ว
+    console.log("AI parsed ->", parsed);
 
-
+    const gc = new GoogleCalendar(session.accessToken);
+    const event = await gc.createEvent({
+      summary: parsed.title || text,
+      date: parsed.date,
+      start: parsed.start,
+      end: parsed.end, // ไม่มีได้ จะ default +60 นาที
+    });
 
     return NextResponse.json({ ok: true, event, ai: parsed });
   } catch (err: any) {

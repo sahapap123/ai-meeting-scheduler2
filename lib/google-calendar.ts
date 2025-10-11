@@ -3,6 +3,7 @@ import { google } from "googleapis";
 
 export class GoogleCalendar {
   private calendar: ReturnType<typeof google.calendar>;
+
   constructor(accessToken: string) {
     const auth = new google.auth.OAuth2();
     auth.setCredentials({ access_token: accessToken });
@@ -17,11 +18,11 @@ export class GoogleCalendar {
     return res.data;
   }
 
-  // ⬇️ สร้าง RFC3339 พร้อม +07:00 โดยไม่แปลงเป็น UTC
+  // สร้าง RFC3339 พร้อมออฟเซ็ต +07:00 (เวลาไทย) โดยไม่แปลงเป็น UTC
   async createEvent(opts: {
     summary: string;
-    date: string;   // "YYYY-MM-DD" (วันแบบไทย)
-    start: string;  // "HH:mm" (24 ชม.แบบไทย)
+    date: string;   // "YYYY-MM-DD"
+    start: string;  // "HH:mm"
     end?: string;   // "HH:mm" (ไม่ใส่ = +60 นาที)
   }) {
     const startRFC3339 = toRFC3339WithOffset(opts.date, opts.start, 420); // +07:00
@@ -43,12 +44,14 @@ export class GoogleCalendar {
   }
 }
 
+// helpers
 function add60(hhmm: string) {
   const [h, m] = hhmm.split(":").map(Number);
   const d = new Date(2000, 0, 1, h, m);
   d.setMinutes(d.getMinutes() + 60);
   return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
 }
+
 function toRFC3339WithOffset(date: string, time: string, offsetMin: number) {
   const sign = offsetMin >= 0 ? "+" : "-";
   const abs = Math.abs(offsetMin);

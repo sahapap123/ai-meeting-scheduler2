@@ -1,51 +1,44 @@
-/* app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ===== Pixel style พื้นฐาน ===== */
+/* ===== Pixel base ===== */
+:root { --px: 4px; --px-shadow: 4px; --px-color: #000; }
+
 .pixel-border {
-  border: 4px solid #000;
-  border-radius: 0;                 /* ขอบเหลี่ยมแบบพิกเซล */
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.9);
-  image-rendering: pixelated;       /* ทำให้ภาพด้านในดูพิกเซล (ถ้ามี) */
+  border: var(--px) solid var(--px-color);
+  border-radius: 0;
+  box-shadow: var(--px-shadow) var(--px-shadow) 0 rgba(0,0,0,.9);
   background-clip: padding-box;
 }
+.pixel-shadow { box-shadow: var(--px-shadow) var(--px-shadow) 0 rgba(0,0,0,.9); }
 
-/* ตัวช่วยเงาแบบพิกเซล (เผื่ออยากใช้เพิ่ม) */
-.pixel-shadow {
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.9);
-}
-
-/* ตัวช่วยพื้นหลัง */
 .pixel-bg {
   background-image:
     linear-gradient(0deg, rgba(0,0,0,.06) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0,0,0,.06) 1px, transparent 1px);
-  background-size: 16px 16px; /* ตารางพิกเซล */
+  background-size: 16px 16px;
 }
 
-/* ===== รีเซ็ตเล็กน้อย ให้เข้ากับ Bootstrap ===== */
-html, body {
-  height: 100%;
-}
+html, body { height: 100%; }
 
-/* ใช้กับ h1 ที่หน้าหลักให้คมขึ้น */
-h1 .pixel-border {
-  background-color: #fff;
-}
+/* ===== Pixel buttons & inputs ===== */
 .btn-pixel {
-  border: 4px solid #000;
-  border-radius: 0;
-  box-shadow: 4px 4px 0 #000;
+  border: var(--px) solid var(--px-color) !important;
+  border-radius: 0 !important;
+  box-shadow: var(--px-shadow) var(--px-shadow) 0 rgba(0,0,0,.9) !important;
   font-weight: 700;
 }
-.btn-pixel:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 #000; }
-.btn-pixel:active { transform: translate(4px, 4px); box-shadow: 0 0 0 #000; }
+.btn-pixel:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 rgba(0,0,0,.9) !important; }
+.btn-pixel:active { transform: translate(4px, 4px); box-shadow: 0 0 0 rgba(0,0,0,.9) !important; }
 
-:root { --px: 4px; --px-shadow: 4px; --px-color: #000; }
-.pixel-border {
+.textarea-pixel, .input-pixel, textarea.form-control, input.form-control {
   border: var(--px) solid var(--px-color);
   border-radius: 0;
-  box-shadow: var(--px-shadow) var(--px-shadow) 0 var(--px-color);
+  box-shadow: inset 0 0 0 rgba(0,0,0,0), var(--px-shadow) var(--px-shadow) 0 rgba(0,0,0,.1);
+}
+.textarea-pixel:focus, .input-pixel:focus, textarea.form-control:focus, input.form-control:focus {
+  outline: 0;
+  border-color: #000;
+  box-shadow: 0 0 0 .25rem rgba(0,0,0,.1), var(--px-shadow) var(--px-shadow) 0 rgba(0,0,0,.25);
 }

@@ -27,14 +27,10 @@ export default function HomeClient() {
       try {
         data = raw ? JSON.parse(raw) : null;
       } catch {
-        // ไม่ใช่ JSON: แสดงรายละเอียดดิบให้รู้ต้นเหตุ
         data = { error: "non_json_response", detail: raw };
       }
 
-      if (!r.ok) {
-        throw new Error(data?.error || `HTTP_${r.status}`);
-      }
-
+      if (!r.ok) throw new Error(data?.error || `HTTP_${r.status}`);
       setResult(data?.result ?? "(ไม่มีผลลัพธ์)");
     } catch (e: any) {
       setErr(e?.message ?? "เกิดข้อผิดพลาด");

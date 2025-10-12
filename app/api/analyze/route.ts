@@ -3,9 +3,14 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+// GET: ใช้เทสต์ว่าฟังก์ชันทำงาน/คืน JSON ได้
+export async function GET() {
+  return NextResponse.json({ ok: true });
+}
+
 export async function POST(req: Request) {
   try {
-    // ป้องกัน parse ว่าง
+    // อ่าน body แบบกันพัง
     let textInput = "";
     try {
       const body = await req.json();
@@ -43,11 +48,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "upstream_error", detail: raw }, { status: 502 });
     }
 
-    let data: any;
+    let data: any = null;
     try {
       data = raw ? JSON.parse(raw) : null;
     } catch {
-      return NextResponse.json({ error: "invalid_upstream_json", detail: raw?.slice(0, 2000) }, { status: 502 });
+      return NextResponse.json(
+        { error: "invalid_upstream_json", detail: raw?.slice(0, 2000) },
+        { status: 502 }
+      );
     }
 
     const result = data?.choices?.[0]?.message?.content ?? "ไม่ได้รับผลลัพธ์จากโมเดล";

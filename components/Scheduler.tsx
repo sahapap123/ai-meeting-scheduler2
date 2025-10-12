@@ -24,10 +24,8 @@ export default function Scheduler({ session }: { session: Session }) {
   // Voice states
   const [isRecording, setIsRecording] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(true);
-
   const recRef = useRef<any>(null);
 
-  // helper: มี SpeechRecognition ไหม
   const getSRClass = (): any | null => {
     if (typeof window === "undefined") return null;
     return window.SpeechRecognition || window.webkitSpeechRecognition || null;
@@ -36,7 +34,6 @@ export default function Scheduler({ session }: { session: Session }) {
   const browserHasSTT = typeof window !== "undefined" && !!getSRClass();
   const browserHasTTS = typeof window !== "undefined" && "speechSynthesis" in window;
 
-  // cleanup เมื่อออกจากหน้า
   useEffect(() => {
     return () => {
       try { recRef.current?.stop(); } catch {}
@@ -44,11 +41,10 @@ export default function Scheduler({ session }: { session: Session }) {
     };
   }, []);
 
-  // ---- Speech To Text ----
   const startRecord = () => {
     const SRClass = getSRClass();
     if (!SRClass) {
-      setReply("เบราว์เซอร์นี้ยังไม่รองรับการรู้จำเสียง (แนะนำ Chrome/Edge รุ่นล่าสุด)");
+      setReply("เบราว์เซอร์ยังไม่รองรับการรู้จำเสียง (แนะนำ Chrome/Edge ล่าสุด)");
       return;
     }
     if (isRecording) return;
@@ -84,7 +80,6 @@ export default function Scheduler({ session }: { session: Session }) {
     setIsRecording(false);
   };
 
-  // ---- Text To Speech ----
   const speakThai = (msg: string) => {
     if (!browserHasTTS || !ttsEnabled) return;
     try {
@@ -102,7 +97,6 @@ export default function Scheduler({ session }: { session: Session }) {
     if (text.trim() === "" || isLoading) return;
     setIsLoading(true);
     setReply("AI กำลังวิเคราะห์...");
-
     try {
       const response = await fetch("/api/auth/calendar/quick", {
         method: "POST",
@@ -174,35 +168,49 @@ export default function Scheduler({ session }: { session: Session }) {
         </CardHeader>
 
         <CardContent className="p-6 space-y-4">
+          {/* แถวช่องพิมพ์ */}
           <div className="flex gap-2">
             <Input
               id="prompt-input"
               type="text"
-              placeholder="พูดหรือพิมพ์: เช่น ‘พรุ่งนี้สองทุ่มประชุม’ หรือ ‘วันนี้ว่างไหม?’"
+              placeholder="พูดหรือพิมพ์: ‘พรุ่งนี้สองทุ่มประชุม’ หรือ ‘วันนี้ว่างไหม?’"
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleClick()}
               disabled={isLoading}
-              className="h-12 text-base"
+              className="h-12 text-base flex-1"
             />
+          </div>
+
+          {/* แถวปุ่มเสียง แยกบรรทัดให้มองเห็นชัด */}
+          <div className="flex items-center gap-2">
             {isRecording ? (
               <Button
                 variant="destructive"
                 onClick={stopRecord}
-                className="h-12 px-3"
+                className="h-10"
                 title="หยุดฟัง"
               >
-                <StopCircle className="h-5 w-5" />
+                <StopCircle className="h-5 w-5 mr-1" />
+                หยุดฟัง
               </Button>
             ) : (
               <Button
                 variant="secondary"
                 onClick={startRecord}
-                className="h-12 px-3"
+                className="h-10"
                 title="กดเพื่อพูด"
+                disabled={!browserHasSTT}
               >
-                <Mic className="h-5 w-5" />
+                <Mic className="h-5 w-5 mr-1" />
+                พูดด้วยเสียง
               </Button>
+            )}
+
+            {!browserHasSTT && (
+              <span className="text-sm text-muted-foreground">
+                เบราว์เซอร์ไม่รองรับการรู้จำเสียง (แนะนำ Chrome/Edge บน HTTPS)
+              </span>
             )}
           </div>
 

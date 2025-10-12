@@ -3,149 +3,49 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ใส่เฉพาะตัวแปร/รีเซ็ตไว้ใน layer base */
-@layer base {
-  :root {
-    --neon-cyan: #00fff0;
-    --neon-pink: #ff00e6;
-    --neon-purple: #8a2be2;
-    --neon-green: #7CFF6B;
-    --dark-900: #0b0f18;
-    --dark-800: #0f1524;
-    --grid: rgba(0,255,240,0.08);
-  }
+/* ===== Pixel style พื้นฐาน ===== */
+.pixel-border {
+  border: 4px solid #000;
+  border-radius: 0;                 /* ขอบเหลี่ยมแบบพิกเซล */
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.9);
+  image-rendering: pixelated;       /* ทำให้ภาพด้านในดูพิกเซล (ถ้ามี) */
+  background-clip: padding-box;
 }
 
-/* ====== ด้านล่างนี้อยู่นอก @layer base ====== */
-
-/* พื้นหลังกริดนีออน + เรืองแสง */
-.cyber-bg {
-  background:
-    radial-gradient(1200px 600px at 70% -20%, rgba(255,0,209,0.15), transparent 60%),
-    radial-gradient(1000px 500px at -10% 110%, rgba(0,255,240,0.15), transparent 55%),
-    linear-gradient(var(--dark-900), var(--dark-800));
-  position: relative;
-  overflow-x: hidden;
+/* ตัวช่วยเงาแบบพิกเซล (เผื่ออยากใช้เพิ่ม) */
+.pixel-shadow {
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.9);
 }
 
-/* เส้นกริด */
-.cyber-bg::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background:
-    repeating-linear-gradient(
-      to right,
-      var(--grid) 0 1px,
-      transparent 1px 42px
-    ),
-    repeating-linear-gradient(
-      to bottom,
-      var(--grid) 0 1px,
-      transparent 1px 42px
-    );
-  pointer-events: none;
-  mix-blend-mode: screen;
+/* ตัวช่วยพื้นหลัง */
+.pixel-bg {
+  background-image:
+    linear-gradient(0deg, rgba(0,0,0,.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,.06) 1px, transparent 1px);
+  background-size: 16px 16px; /* ตารางพิกเซล */
 }
 
-/* สแกนไลน์แบบ CRT */
-.crt {
-  position: relative;
-}
-.crt::after {
-  content: "";
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(255,255,255,0.03) 0 2px,
-    rgba(0,0,0,0) 2px 4px
-  );
-  mix-blend-mode: overlay;
+/* ===== รีเซ็ตเล็กน้อย ให้เข้ากับ Bootstrap ===== */
+html, body {
+  height: 100%;
 }
 
-/* การเรืองแสงนีออน */
-.neon {
-  text-shadow:
-    0 0 6px var(--neon-cyan),
-    0 0 12px var(--neon-cyan),
-    0 0 22px var(--neon-cyan);
-  color: var(--neon-cyan);
+/* ใช้กับ h1 ที่หน้าหลักให้คมขึ้น */
+h1 .pixel-border {
+  background-color: #fff;
 }
-.neon-pink  { color: var(--neon-pink); }
-.neon-green { color: var(--neon-green); }
+.btn-pixel {
+  border: 4px solid #000;
+  border-radius: 0;
+  box-shadow: 4px 4px 0 #000;
+  font-weight: 700;
+}
+.btn-pixel:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 #000; }
+.btn-pixel:active { transform: translate(4px, 4px); box-shadow: 0 0 0 #000; }
 
-/* การ์ดพิกเซล */
-.pixel-card {
-  background: rgba(15,21,36,0.7);
-  border: 3px solid var(--neon-cyan);
-  box-shadow:
-    0 0 0 3px rgba(0,255,240,0.2) inset,
-    0 0 24px rgba(0,255,240,0.25),
-    0 0 64px rgba(138,43,226,0.2);
-  border-radius: 8px;   /* มีความมนเล็กน้อย */
-  image-rendering: pixelated;
+:root { --px: 4px; --px-shadow: 4px; --px-color: #000; }
+.pixel-border {
+  border: var(--px) solid var(--px-color);
+  border-radius: 0;
+  box-shadow: var(--px-shadow) var(--px-shadow) 0 var(--px-color);
 }
-
-/* หัวการ์ดแบบไล่เฉด */
-.pixel-head {
-  background: linear-gradient(90deg, rgba(0,255,240,0.12), rgba(255,0,230,0.12));
-  border-bottom: 2px solid rgba(0,255,240,0.35);
-}
-
-/* ปุ่มพิกเซล */
-.pixel-btn {
-  font-family: var(--font-pixel), system-ui, sans-serif;
-  letter-spacing: .5px;
-  text-transform: uppercase;
-  border: 3px solid var(--neon-cyan);
-  color: var(--neon-cyan);
-  background: transparent;
-  box-shadow: 0 0 14px rgba(0,255,240,0.25);
-}
-.pixel-btn:hover {
-  color: #041016;
-  background: var(--neon-cyan);
-  box-shadow: 0 0 22px rgba(0,255,240,0.55);
-}
-
-.pixel-btn-danger {
-  border-color: var(--neon-pink);
-  color: var(--neon-pink);
-  box-shadow: 0 0 14px rgba(255,0,230,0.25);
-}
-.pixel-btn-danger:hover {
-  background: var(--neon-pink);
-  color: #160313;
-  box-shadow: 0 0 22px rgba(255,0,230,0.55);
-}
-
-/* ช่องข้อความ */
-.pixel-input {
-  background: rgba(4,16,22,0.7);
-  border: 2px solid rgba(0,255,240,0.35);
-  color: #def;
-}
-.pixel-input:focus {
-  outline: none;
-  border-color: var(--neon-cyan);
-  box-shadow: 0 0 16px rgba(0,255,240,0.35);
-}
-
-/* แถบข้อความตอบกลับ */
-.alert-cyber {
-  border: 2px solid var(--neon-green);
-  background: rgba(124,255,107,0.08);
-  color: #dfffe0;
-  box-shadow: 0 0 18px rgba(124,255,107,0.25);
-}
-.alert-cyber-danger {
-  border-color: var(--neon-pink);
-  background: rgba(255,0,230,0.08);
-  color: #ffd9fa;
-  box-shadow: 0 0 18px rgba(255,0,230,0.25);
-}
-
-/* ฟอนต์พิกเซลใช้เฉพาะหัวเรื่อง/ปุ่ม */
-.h-pixel { font-family: var(--font-pixel), system-ui, sans-serif; }

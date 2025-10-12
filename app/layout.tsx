@@ -1,32 +1,32 @@
 // app/layout.tsx
-import "bootstrap/dist/js/bootstrap.bundle.min.js";
-import "bootstrap/dist/css/bootstrap.min.css";
+import 'bootstrap/dist/css/bootstrap.min.css'; // โหลด Bootstrap CSS ก่อน
+import './globals.css';                        // แล้วค่อยโหลดสไตล์ของเรา
 
-import type { Metadata } from "next";
-import { Inter as FontSans, Press_Start_2P as Pixel } from "next/font/google";
-import "./globals.css";
-import { cn } from "@/lib/utils";
-import NextAuthProviders from "./providers";
-
-const fontSans = FontSans({ subsets: ["latin"], variable: "--font-sans" });
-const pixel = Pixel({ weight: "400", subsets: ["latin"], variable: "--font-pixel" });
-
-export const metadata: Metadata = {
-  title: "AI Meeting Scheduler 🤖",
-  description: "An intelligent assistant for scheduling Google Calendar events.",
+export const metadata = {
+  title: 'Bootstrap + Pixel Demo',
+  description: 'Next.js App Router with Bootstrap and Pixel style',
 };
+<section className="container py-5">
+  <nav className="navbar bg-white mb-4">
+    <div className="container">
+      <a className="navbar-brand pixel-border px-2">My Brand</a>
+    </div>
+  </nav>
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+  <div className="pixel-border pixel-bg p-4 bg-white mb-4">
+    เนื้อหาพื้นหลังลายตารางพิกเซล
+  </div>
+</section>
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="th" suppressHydrationWarning>
-      <body
-        className={cn(
-          "min-h-screen font-sans antialiased cyber-bg crt", // <<<< พื้นหลัง+สแกนไลน์
-          fontSans.variable,
-          pixel.variable
-        )}
-      >
-        <NextAuthProviders>{children}</NextAuthProviders>
+    <html lang="th">
+      <body className="bg-body-tertiary">
+        {children}
       </body>
     </html>
   );

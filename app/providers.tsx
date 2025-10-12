@@ -1,10 +1,10 @@
 // app/providers.tsx
-'use client';
+"use client";
+import { useEffect } from "react";
 
-import { SessionProvider } from 'next-auth/react';
-import React from 'react';
-
-// สร้าง Component สำหรับห่อหุ้ม SessionProvider
-export default function NextAuthProviders({ children }: { children: React.ReactNode }) {
-  return <SessionProvider>{children}</SessionProvider>;
+export default function Providers({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    import("bootstrap/dist/js/bootstrap.bundle.min.js");
+  }, []);
+  return <>{children}</>;
 }

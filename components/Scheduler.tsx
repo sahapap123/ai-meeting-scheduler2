@@ -5,9 +5,6 @@ import { signOut } from "next-auth/react";
 import { Loader2, LogOut, Mic, StopCircle, Volume2 } from "lucide-react";
 import type { Session } from "next-auth";
 
-// ✅ Import Bootstrap
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap/dist/js/bootstrap.bundle.min.js";
 
 declare global {
   interface Window {
@@ -220,32 +217,29 @@ export default function Scheduler({ session }: { session: Session }) {
           </div>
 
           <button
-            className="btn btn-success w-100 py-2 fw-bold"
-            onClick={handleClick}
-            disabled={isLoading || text.trim() === ""}
-          >
-            {isLoading ? (
-              <span>
-                <Loader2 className="me-2 spinner-border spinner-border-sm" /> กำลังประมวลผล...
-              </span>
-            ) : (
-              "ส่งให้ AI วิเคราะห์"
-            )}
-          </button>
-<button className="btn btn-success w-100 py-2 fw-bold">
-  ส่งให้ AI วิเคราะห์
+  className="btn btn-success w-100 py-2 fw-bold"
+  onClick={handleClick}
+  disabled={isLoading || text.trim() === ""}>
+  {isLoading ? (
+    <span>
+      <Loader2 className="me-2 spinner-border spinner-border-sm" /> กำลังประมวลผล...
+    </span>
+  ) : (
+    "ส่งให้ AI วิเคราะห์"
+  )}
 </button>
-          {reply && (
-            <div
-              className={`alert mt-4 ${
-                typeof reply === "string" && reply.includes("ผิดพลาด")
-                  ? "alert-danger"
-                  : "alert-success"
-              }`}
-            >
-              {reply}
-            </div>
-          )}
+
+{reply && (
+  <div
+    className={`alert mt-4 ${
+      typeof reply === "string" && reply.includes("ผิดพลาด")
+        ? "alert-danger"
+        : "alert-success"
+    }`}>
+    {reply}
+  </div>
+)}
+
         </div>
       </div>
     </main>

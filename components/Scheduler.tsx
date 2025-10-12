@@ -2,11 +2,12 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, LogOut, Mic, StopCircle, Volume2 } from "lucide-react";
 import type { Session } from "next-auth";
+
+// ✅ Import Bootstrap
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
 
 declare global {
   interface Window {
@@ -40,6 +41,7 @@ export default function Scheduler({ session }: { session: Session }) {
     };
   }, []);
 
+  // 🎤 Start recording voice
   const startRecord = () => {
     const SRClass = getSRClass();
     if (!SRClass) {
@@ -92,7 +94,7 @@ export default function Scheduler({ session }: { session: Session }) {
     } catch {}
   };
 
-  // 🔍 ตรวจจับว่าผู้ใช้ "ถามตาราง" หรือ "สั่งสร้างนัด"
+  // 🔍 ตรวจจับว่าผู้ใช้กำลัง "ถามตาราง" แทนที่จะ "สร้างนัด"
   function isQueryIntent(text: string): boolean {
     if (!text) return false;
     const q = text
@@ -117,7 +119,6 @@ export default function Scheduler({ session }: { session: Session }) {
 
   const handleClick = async () => {
     if (text.trim() === "" || isLoading) return;
-
     setIsLoading(true);
     setReply("AI กำลังวิเคราะห์...");
 
@@ -145,7 +146,7 @@ export default function Scheduler({ session }: { session: Session }) {
               href={data.event.htmlLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
+              className="text-primary fw-bold"
             >
               (ดูใน Google Calendar)
             </a>
@@ -162,91 +163,91 @@ export default function Scheduler({ session }: { session: Session }) {
     }
   };
 
+  // 🌈 RETURN UI (Bootstrap version)
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-slate-100 p-4">
-      <div className="absolute top-4 right-4 flex gap-2">
+    <main className="d-flex flex-column align-items-center justify-content-center min-vh-100 bg-light p-3">
+      <div className="position-absolute top-0 end-0 m-3 d-flex gap-2">
         {browserHasTTS && (
-          <Button
-            variant="outline"
+          <button
+            className="btn btn-outline-secondary btn-sm"
             onClick={() => setTtsEnabled(v => !v)}
-            className="text-sm"
-            title="สลับการอ่านออกเสียง"
           >
-            <Volume2 className="mr-2 h-4 w-4" />
+            <Volume2 size={16} className="me-2" />
             {ttsEnabled ? "เสียง: เปิด" : "เสียง: ปิด"}
-          </Button>
+          </button>
         )}
-        <Button variant="outline" onClick={() => signOut()} className="text-sm">
-          <LogOut className="mr-2 h-4 w-4" /> ออกจากระบบ
-        </Button>
+        <button className="btn btn-outline-danger btn-sm" onClick={() => signOut()}>
+          <LogOut size={16} className="me-2" />
+          ออกจากระบบ
+        </button>
       </div>
 
-      <Card className="w-full max-w-lg shadow-xl">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight flex items-center justify-center">
-            <span className="mr-2">🤖</span> AI ผู้ช่วยนัดตารางประชุม
-          </CardTitle>
-          <p className="text-sm text-muted-foreground pt-2">
+      <div className="card shadow-lg" style={{ maxWidth: "500px", width: "100%" }}>
+        <div className="card-header text-center bg-primary text-white">
+          <h4 className="fw-bold mb-0">🤖 AI ผู้ช่วยจัดตารางประชุม</h4>
+        </div>
+        <div className="card-body p-4">
+          <p className="text-muted text-center mb-3">
             ล็อกอินในชื่อ: <strong>{session.user?.email}</strong>
           </p>
-        </CardHeader>
 
-        <CardContent className="p-6 space-y-4">
-          <Input
-            id="prompt-input"
-            type="text"
-            placeholder="พูดหรือพิมพ์: ‘พรุ่งนี้สองทุ่มประชุม’ หรือ ‘วันนี้ว่างไหม?’"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleClick()}
-            disabled={isLoading}
-            className="h-12 text-base"
-          />
+          <div className="input-group mb-3">
+            <input
+              type="text"
+              className="form-control form-control-lg"
+              placeholder="พูดหรือพิมพ์ เช่น 'วันนี้มีประชุมไหม?'"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleClick()}
+              disabled={isLoading}
+            />
+          </div>
 
-          <div className="flex items-center gap-2">
+          <div className="d-flex gap-2 mb-3">
             {isRecording ? (
-              <Button variant="destructive" onClick={stopRecord} className="h-10">
-                <StopCircle className="h-5 w-5 mr-1" /> หยุดฟัง
-              </Button>
+              <button className="btn btn-danger w-100" onClick={stopRecord}>
+                <StopCircle className="me-2" /> หยุดฟัง
+              </button>
             ) : (
-              <Button variant="secondary" onClick={startRecord} className="h-10" disabled={!browserHasSTT}>
-                <Mic className="h-5 w-5 mr-1" /> พูดด้วยเสียง
-              </Button>
-            )}
-            {!browserHasSTT && (
-              <span className="text-sm text-muted-foreground">
-                เบราว์เซอร์ไม่รองรับการรู้จำเสียง (แนะนำ Chrome/Edge บน HTTPS)
-              </span>
+              <button
+                className="btn btn-secondary w-100"
+                onClick={startRecord}
+                disabled={!browserHasSTT}
+              >
+                <Mic className="me-2" /> พูดด้วยเสียง
+              </button>
             )}
           </div>
 
-          <Button
+          <button
+            className="btn btn-success w-100 py-2 fw-bold"
             onClick={handleClick}
             disabled={isLoading || text.trim() === ""}
-            className="w-full h-12 text-base font-semibold"
           >
             {isLoading ? (
-              <span className="flex items-center justify-center">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> กำลังประมวลผล...
+              <span>
+                <Loader2 className="me-2 spinner-border spinner-border-sm" /> กำลังประมวลผล...
               </span>
             ) : (
               "ส่งให้ AI วิเคราะห์"
             )}
-          </Button>
-
+          </button>
+<button className="btn btn-success w-100 py-2 fw-bold">
+  ส่งให้ AI วิเคราะห์
+</button>
           {reply && (
             <div
-              className={`mt-4 p-4 rounded-lg text-center text-sm border ${
+              className={`alert mt-4 ${
                 typeof reply === "string" && reply.includes("ผิดพลาด")
-                  ? "bg-red-50/50 border-red-200 text-red-800"
-                  : "bg-green-50/50 border-green-200 text-green-800"
+                  ? "alert-danger"
+                  : "alert-success"
               }`}
             >
               {reply}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </main>
   );
 }

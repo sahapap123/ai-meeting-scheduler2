@@ -54,7 +54,6 @@ export default function HomeClient() {
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
-
         <div className="d-flex gap-2 align-items-center">
           <button className="btn btn-success btn-pixel" onClick={analyze} disabled={loading}>
             {loading ? "กำลังวิเคราะห์..." : "วิเคราะห์"}
@@ -64,7 +63,6 @@ export default function HomeClient() {
             ล้าง
           </button>
         </div>
-
         {err && <div className="alert alert-danger mt-3 mb-0">{err}</div>}
       </div>
 

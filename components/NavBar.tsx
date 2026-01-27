@@ -19,9 +19,8 @@ export default function NavBar() {
               </button>
             </>
           ) : (
-            <button className="btn btn-primary btn-sm btn-pixel" onClick={() => signIn("google")}>
-              เข้าสู่ระบบ
-            </button>
+            // ลบปุ่มเข้าสู่ระบบตรงนี้ออก แล้วใส่ null แทน
+            null
           )}
         </div>
       </div>

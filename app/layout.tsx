@@ -4,7 +4,7 @@ import './globals.css';
 import Providers from './providers';
 
 export const metadata = {
-  title: 'Bootstrap + Pixel Demo',
+  title: 'AI MS',
   description: 'Next.js App Router with Bootstrap and Pixel style',
 };
 

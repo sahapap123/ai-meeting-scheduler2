@@ -25,7 +25,7 @@ export default function PrivacyPage() {
 
         <section className="mb-4">
           <h2 className="h5">3. การติดต่อเรา</h2>
-          <p>หากมีข้อสงสัย โปรดติดต่อ: <strong>[ใส่อีเมลของคุณตรงนี้]</strong></p>
+          <p>หากมีข้อสงสัย โปรดติดต่อ: <strong>[SahapapButprasert@gmail.com]</strong></p>
         </section>
 
         <Link href="/" className="btn btn-dark btn-pixel mt-3">

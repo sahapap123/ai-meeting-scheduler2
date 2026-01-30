@@ -2,20 +2,26 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './globals.css';
 import Providers from './providers';
+import { Metadata } from 'next';
+// import NavBar from '@/components/ui/NavBar'; // <--- ลบบรรทัดนี้ทิ้ง หรือ comment ไว้
 
-export const metadata = {
-  title: 'AI MS',
-  description: 'Next.js App Router with Bootstrap and Pixel style',
+export const metadata: Metadata = {
+  title: "AI Scheduler",
+  description: "Your personal AI assistant for scheduling",
+  icons: { icon: '/icon.png' },
 };
 
-// app/layout.tsx
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="th">
-      <body className="bg-dark text-light">
-        <div className="container-fluid min-vh-100 d-flex flex-column align-items-center py-4">
-          <Providers>{children}</Providers>
-        </div>
+      {/* ลบ class จัดกึ่งกลางออก เพื่อให้ขยายเต็มที่ */}
+      <body className="w-100 min-vh-100 bg-dark">
+        <Providers>
+          {/* <NavBar />  <--- เอาแถบขาวออกตรงนี้ */}
+          <main className="w-100 h-100">
+            {children}
+          </main>
+        </Providers>
       </body>
     </html>
   );

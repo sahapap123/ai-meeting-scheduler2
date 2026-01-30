@@ -4,23 +4,20 @@
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useState } from 'react';
 import Image from 'next/image';
-import VoiceButton from "@/components/VoiceButton"; // <--- นำเข้ากลับมาแล้วครับ
+import VoiceButton from "@/components/VoiceButton";
 
 export default function HomeClient() {
   const { data: session } = useSession();
   const [prompt, setPrompt] = useState('');
   
-  // ข้อมูลจำลองสำหรับแสดงผล (Mockup)
-  const mockSchedule = [
-    { time: '14:00', title: 'ประชุมทีม (ห้อง Zoom)', status: 'success' },
-    { time: '17:00', title: 'ออกกำลังกาย (30 นาที)', status: 'pending' },
-  ];
+  // --- ลบข้อมูลจำลอง (mockSchedule) ออกแล้วครับ ---
 
   if (!session) {
+    // หน้าล็อกอิน: จัดให้อยู่ตรงกลางจอ
     return (
-      <div className="cyber-card text-center">
+      <div className="cyber-card justify-content-center text-center">
         <div className="logo-glow-container">
-          <Image src="/icon.png" alt="Logo" width={80} height={80} />
+          <Image src="/icon.png" alt="Logo" width={70} height={70} />
         </div>
         <h1 className="pixel-font mb-4" style={{fontSize: '1.5rem', color: 'var(--neon-cyan)'}}>
           AI Scheduler
@@ -33,6 +30,7 @@ export default function HomeClient() {
     );
   }
 
+  // หน้าหลัก: ขยายเต็มจอ
   return (
     <div className="cyber-card">
       {/* ส่วนหัว */}
@@ -44,9 +42,9 @@ export default function HomeClient() {
       {/* โลโก้ */}
       <div className="text-center mb-4">
          <div className="logo-glow-container mx-auto">
-           <Image src="/icon.png" alt="Logo" width={80} height={80} />
+           <Image src="/icon.png" alt="Logo" width={70} height={70} />
          </div>
-        <h2 className="pixel-font" style={{ color: 'var(--text-light)' }}>AI Scheduler</h2>
+        <h2 className="pixel-font" style={{ color: 'var(--text-light)', fontSize: '1.2rem' }}>AI Scheduler</h2>
       </div>
 
       {/* ช่องกรอกข้อมูล + ปุ่มเสียง */}
@@ -60,30 +58,25 @@ export default function HomeClient() {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
           />
-          
-          {/* --- ปุ่มเสียงอยู่ตรงนี้ครับ --- */}
           <div className="mx-2">
              <VoiceButton onTranscript={(text) => setPrompt(text)} />
           </div>
-
           <button className="cyber-btn-primary">สร้าง</button>
         </div>
       </div>
 
-      {/* รายการตาราง */}
-      <div>
+      {/* รายการตาราง (แสดงข้อความว่างเปล่าแทน) */}
+      <div className="flex-grow-1 d-flex flex-column justify-content-start">
         <h5 className="mb-3 text-light">ตารางเวลาของคุณ:</h5>
-        {mockSchedule.map((item, index) => (
-          <div key={index} className={`schedule-item ${item.status}`}>
-            <span className="schedule-icon">
-              {item.status === 'success' ? '✅' : '🕒'}
-            </span>
-            <span className="schedule-time">{item.time}</span>
-            <span>{item.title}</span>
-          </div>
-        ))}
+        
+        {/* --- แสดงข้อความนี้แทนรายการตัวอย่าง --- */}
+        <div className="text-center text-dim mt-5 p-4" style={{border: '1px dashed #2d2d44', borderRadius: '12px'}}>
+            <p className="mb-0">ยังไม่มีรายการนัดหมาย</p>
+            <small>พิมพ์คำสั่งหรือกดปุ่มไมค์เพื่อเริ่มสร้าง</small>
+        </div>
+
       </div>
-       <p className="text-center text-dim mt-4" style={{fontSize: '0.7rem'}}>Next.js App Router with Cyberpunk style</p>
+       <p className="text-center text-dim mt-auto pt-4" style={{fontSize: '0.7rem'}}>Next.js App Router with Cyberpunk style</p>
     </div>
   );
 }

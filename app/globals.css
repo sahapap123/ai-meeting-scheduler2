@@ -1,7 +1,3 @@
-
-
-/* ===== Pixel base ===== */
-/* app/globals.css */
 /* app/globals.css */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700&display=swap');
 
@@ -18,12 +14,10 @@
 body {
   margin: 0;
   font-family: 'Roboto', sans-serif;
+  /* พื้นหลังแบบเดิม */
   background: radial-gradient(circle at center top, var(--bg-dark-2), var(--bg-dark-1));
   color: var(--text-light);
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 .pixel-font {
@@ -31,29 +25,38 @@ body {
   text-transform: uppercase;
 }
 
-/* --- Cyber Container Card --- */
+/* --- Cyber Container Card (ปรับแก้ใหม่) --- */
 .cyber-card {
   background-color: var(--card-bg);
-  border-radius: 24px;
-  border: 2px solid transparent;
+  border-radius: 0; /* ขอบไม่มนแล้ว เพื่อให้เข้ามุมจอ */
+  border: 1px solid transparent; /* ขอบบางลง */
+  
+  /* การไล่สีขอบแบบเดิม */
   background-image: linear-gradient(var(--card-bg), var(--card-bg)), linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
   background-origin: border-box;
   background-clip: content-box, border-box;
-  box-shadow: 0 0 20px rgba(0, 243, 255, 0.3), inset 0 0 20px rgba(189, 0, 255, 0.2);
-  padding: 2rem;
+  
+  /* แสง Glow บางลงและนุ่มขึ้น */
+  box-shadow: 0 0 10px rgba(0, 243, 255, 0.2), inset 0 0 10px rgba(189, 0, 255, 0.1);
+  
+  padding: 1.5rem; /* ลด padding ลง */
   width: 100%;
-  max-width: 480px; /* ขนาดความกว้างของการ์ด */
+  max-width: 100%; /* ขยายเต็มจอ */
+  min-height: 100vh; /* สูงเต็มจอ */
+  
+  display: flex;
+  flex-direction: column;
 }
 
 /* --- Logo Container --- */
 .logo-glow-container {
-  width: 120px;
-  height: 120px;
+  width: 100px; /* ลดขนาดโลโก้ลงนิดหน่อย */
+  height: 100px;
   margin: 0 auto 1.5rem;
-  padding: 10px;
-  border-radius: 20px;
+  padding: 8px;
+  border-radius: 16px;
   background: linear-gradient(135deg, rgba(0, 243, 255, 0.2), rgba(189, 0, 255, 0.2));
-  box-shadow: 0 0 30px rgba(0, 243, 255, 0.4);
+  box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -95,7 +98,7 @@ body {
   transform: translateY(-2px);
 }
 
-/* --- Schedule List Items --- */
+/* --- Schedule List Items (เก็บไว้ใช้ตอนมีข้อมูลจริง) --- */
 .schedule-item {
   background-color: #1a1a29;
   border: 1px solid #2d2d44;

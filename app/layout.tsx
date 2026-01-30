@@ -3,7 +3,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './globals.css';
 import Providers from './providers';
 import { Metadata } from 'next';
-// import NavBar from '@/components/ui/NavBar'; // <--- ลบบรรทัดนี้ทิ้ง หรือ comment ไว้
+
+// ไม่ต้อง import NavBar แล้วครับ
 
 export const metadata: Metadata = {
   title: "AI Scheduler",
@@ -14,10 +15,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="th">
-      {/* ลบ class จัดกึ่งกลางออก เพื่อให้ขยายเต็มที่ */}
       <body className="w-100 min-vh-100 bg-dark">
         <Providers>
-          {/* <NavBar />  <--- เอาแถบขาวออกตรงนี้ */}
+          {/* ลบ <NavBar /> ออกไปแล้ว ตรงนี้จะโล่ง ไม่มีแถบขาวครับ */}
           <main className="w-100 h-100">
             {children}
           </main>

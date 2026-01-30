@@ -14,7 +14,6 @@
 body {
   margin: 0;
   font-family: 'Roboto', sans-serif;
-  /* พื้นหลังแบบเดิม */
   background: radial-gradient(circle at center top, var(--bg-dark-2), var(--bg-dark-1));
   color: var(--text-light);
   min-height: 100vh;
@@ -25,24 +24,18 @@ body {
   text-transform: uppercase;
 }
 
-/* --- Cyber Container Card (ปรับแก้ใหม่) --- */
+/* --- Cyber Container Card (ฉบับขอบบางเฉียบ) --- */
 .cyber-card {
   background-color: var(--card-bg);
-  border-radius: 0; /* ขอบไม่มนแล้ว เพื่อให้เข้ามุมจอ */
-  border: 1px solid transparent; /* ขอบบางลง */
+  /* เปลี่ยนมาใช้ขอบปกติ ขนาด 1px สีฟ้า */
+  border: 1px solid var(--neon-cyan);
   
-  /* การไล่สีขอบแบบเดิม */
-  background-image: linear-gradient(var(--card-bg), var(--card-bg)), linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
-  background-origin: border-box;
-  background-clip: content-box, border-box;
+  /* เพิ่มเงาเรืองแสง (Glow) ให้ดูมีมิติแทน */
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.15), inset 0 0 20px rgba(0, 0, 0, 0.5);
   
-  /* แสง Glow บางลงและนุ่มขึ้น */
-  box-shadow: 0 0 10px rgba(0, 243, 255, 0.2), inset 0 0 10px rgba(189, 0, 255, 0.1);
-  
-  padding: 1.5rem; /* ลด padding ลง */
+  padding: 1.5rem;
   width: 100%;
-  max-width: 100%; /* ขยายเต็มจอ */
-  min-height: 100vh; /* สูงเต็มจอ */
+  min-height: 100vh; /* ยืดเต็มจอ */
   
   display: flex;
   flex-direction: column;
@@ -50,13 +43,15 @@ body {
 
 /* --- Logo Container --- */
 .logo-glow-container {
-  width: 100px; /* ลดขนาดโลโก้ลงนิดหน่อย */
+  width: 100px;
   height: 100px;
   margin: 0 auto 1.5rem;
   padding: 8px;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(0, 243, 255, 0.2), rgba(189, 0, 255, 0.2));
-  box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+  /* พื้นหลังโลโก้จางๆ */
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(0, 243, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -97,19 +92,3 @@ body {
   box-shadow: 0 0 25px var(--neon-cyan);
   transform: translateY(-2px);
 }
-
-/* --- Schedule List Items (เก็บไว้ใช้ตอนมีข้อมูลจริง) --- */
-.schedule-item {
-  background-color: #1a1a29;
-  border: 1px solid #2d2d44;
-  border-left: 4px solid var(--neon-cyan);
-  border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 0.8rem;
-  display: flex;
-  align-items: center;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-}
-.schedule-item.pending { border-left-color: #ffc107; }
-.schedule-icon { font-size: 1.2rem; margin-right: 1rem; }
-.schedule-time { font-weight: bold; color: var(--neon-cyan); margin-right: 1rem; min-width: 60px; }

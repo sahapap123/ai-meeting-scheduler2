@@ -8,11 +8,14 @@ export const metadata = {
   description: 'Next.js App Router with Bootstrap and Pixel style',
 };
 
+// app/layout.tsx
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="th">
-      <body className="bg-body-tertiary">
-        <Providers>{children}</Providers>
+      <body className="bg-dark text-light">
+        <div className="container-fluid min-vh-100 d-flex flex-column align-items-center py-4">
+          <Providers>{children}</Providers>
+        </div>
       </body>
     </html>
   );

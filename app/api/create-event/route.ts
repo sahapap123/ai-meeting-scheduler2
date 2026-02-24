@@ -3,56 +3,72 @@ import { google } from 'googleapis';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-// --- สมองกลคำนวณเวลาไทย (รอดชัวร์ 100%) ---
-function extractEventData(text: string) {
-  // 1. ดึงเวลาปัจจุบัน และบังคับให้เป็นโซนเวลา "กรุงเทพฯ" ทันที
-  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
+// --- ดึงความสามารถจากโค้ดเก่ามาใช้ ---
+const pad = (n: number) => String(n).padStart(2, "0");
+const thaiNow = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
+
+// แปลงเลขไทยเป็นอารบิก (กันคนพิมพ์ ๑-๙)
+function norm(s: string) {
+  const th2ar: Record<string, string> = {"๐":"0","๑":"1","๒":"2","๓":"3","๔":"4","๕":"5","๖":"6","๗":"7","๘":"8","๙":"9"};
+  return s.replace(/[๐-๙]/g, ch => th2ar[ch] ?? ch).trim();
+}
+
+function extractEventData(rawText: string) {
+  const text = norm(rawText); // แปลงเลขไทยก่อน
+  const now = thaiNow();
   let targetDate = new Date(now);
   let summary = text;
 
-  // 2. เช็คคำว่า พรุ่งนี้
+  // 1. ตรวจจับวัน (พรุ่งนี้, มะรืน)
   if (text.includes("พรุ่งนี้")) {
     targetDate.setDate(now.getDate() + 1);
-    summary = summary.replace("พรุ่งนี้", "").trim();
+    summary = summary.replace(/พรุ่งนี้/g, "").trim();
+  } else if (text.includes("มะรืน")) {
+    targetDate.setDate(now.getDate() + 2);
+    summary = summary.replace(/มะรืน/g, "").trim();
   }
 
-  // 3. จับตัวเลขเวลา
-  let hour = now.getHours() + 1; // Default: อีก 1 ชม.
+  // 2. ตรวจจับเวลา
+  let hour = now.getHours() + 1; // ค่าเริ่มต้น: อีก 1 ชั่วโมง
   let minute = 0;
 
-  const timeMatch = text.match(/(\d{1,2})[:.]?(\d{2})?/);
+  // ค้นหาตัวเลขเวลา เช่น "9 โมง", "14.30", "บ่าย 2", "1 ทุ่ม"
+  const timeMatch = text.match(/(\d{1,2})[:.]?(\d{2})?\s*(โมง|ทุ่ม|บ่าย|เช้า|น\.)?/);
+
   if (timeMatch) {
     let h = parseInt(timeMatch[1]);
     let m = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+    const keyword = timeMatch[3] || "";
 
-    // แปลงเวลาแบบคนไทย
-    if (text.includes("ทุ่ม")) {
+    if (text.includes("ทุ่ม") || keyword === "ทุ่ม") {
       h = h < 6 ? h + 18 : h; // 1 ทุ่ม = 19
-    } else if (text.includes("บ่าย")) {
+    } else if (text.includes("บ่าย") || keyword === "บ่าย") {
       h = h < 6 ? h + 12 : h; // บ่าย 2 = 14
-    } else if (text.includes("เย็น") || text.includes("กลางคืน")) {
-      h = h < 12 ? h + 12 : h; // 5 โมงเย็น = 17, 9 โมงเย็น = 21
+    } else if (text.includes("เย็น")) {
+      h = h < 12 ? h + 12 : h; // 4 โมงเย็น = 16
     }
 
     hour = h;
     minute = m;
+    // ลบคำบอกเวลาออกจากชื่อนัดหมาย
+    summary = summary.replace(timeMatch[0], "").replace(/เวลา/g, "").trim();
   }
 
-  // 4. บังคับสร้าง String เวลาแบบ Local (ไม่มี Z ตัวอักษรอเมริกาต่อท้าย)
-  const pad = (n: number) => n.toString().padStart(2, '0');
+  // 3. ประกอบร่างเวลาตามมาตรฐาน +07:00
   const y = targetDate.getFullYear();
-  const m = pad(targetDate.getMonth() + 1);
-  const d = pad(targetDate.getDate());
+  const mStr = pad(targetDate.getMonth() + 1);
+  const dStr = pad(targetDate.getDate());
+  const hStr = pad(hour);
+  const minStr = pad(minute);
   
-  // เวลาเริ่ม
-  const startString = `${y}-${m}-${d}T${pad(hour)}:${pad(minute)}:00`;
-  // เวลาจบ (บวก 1 ชม.)
-  const endString = `${y}-${m}-${d}T${pad(hour === 23 ? 23 : hour + 1)}:${pad(minute)}:00`;
+  const startRFC = `${y}-${mStr}-${dStr}T${hStr}:${minStr}:00+07:00`;
+  const endHour = hour === 23 ? 23 : hour + 1; // ป้องกันบวกข้ามวันพัง
+  const endRFC = `${y}-${mStr}-${dStr}T${pad(endHour)}:${minStr}:00+07:00`;
 
   return {
-    summary: summary + " 🎯", // ใส่เป้ายิงให้รู้ว่าติดสมองกลตัวใหม่แล้ว
-    start: startString,
-    end: endString
+    summary: summary + " 🤖",
+    start: startRFC,
+    end: endRFC
   };
 }
 
@@ -62,11 +78,8 @@ export async function POST(req: Request) {
 
   try {
     const { prompt } = await req.json();
-
-    // เรียกใช้ฟังก์ชันเวลาไทยของเรา
     const eventData = extractEventData(prompt);
 
-    // ส่งให้ Google Calendar (พร้อมระบุว่านี่คือเวลาไทยนะ!)
     const auth = new google.auth.OAuth2();
     auth.setCredentials({ access_token: session.accessToken });
     const calendar = google.calendar({ version: 'v3', auth });
@@ -75,8 +88,9 @@ export async function POST(req: Request) {
       calendarId: 'primary',
       requestBody: {
         summary: eventData.summary,
-        start: { dateTime: eventData.start, timeZone: 'Asia/Bangkok' }, // บังคับเป็นไทย
-        end: { dateTime: eventData.end, timeZone: 'Asia/Bangkok' }, // บังคับเป็นไทย
+        // ไม่ต้องระบุ timeZone แล้ว เพราะเราแนบ +07:00 เข้าไปในตัวแปรแล้ว
+        start: { dateTime: eventData.start },
+        end: { dateTime: eventData.end },
       },
     });
 

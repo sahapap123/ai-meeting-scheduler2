@@ -12,16 +12,15 @@ export async function POST(req: Request) {
 
   try {
     const { prompt } = await req.json();
-    // ใช้ชื่อโมเดลแบบเจาะจงเพื่อกัน 404
+    // แก้ไขชื่อโมเดลเป็น gemini-1.5-flash-latest เพื่อป้องกัน Error 404
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
     
-    const aiPrompt = `Extract event data from: "${prompt}". Current: ${new Date().toISOString()}. 
-    Return ONLY JSON: {"summary":"Title+Emoji","start":"ISO","end":"ISO"}`;
+    const aiPrompt = `Extract event data from: "${prompt}". Return ONLY JSON: {"summary":"Title+Emoji","start":"ISO String","end":"ISO String"}`;
 
     const result = await model.generateContent(aiPrompt);
     const responseText = result.response.text();
     const cleanJson = responseText.replace(/```json|```/g, "").trim();
-    const event = JSON.parse(cleanJson);
+    const eventData = JSON.parse(cleanJson);
 
     const auth = new google.auth.OAuth2();
     auth.setCredentials({ access_token: session.accessToken });
@@ -30,14 +29,14 @@ export async function POST(req: Request) {
     await calendar.events.insert({
       calendarId: 'primary',
       requestBody: {
-        summary: event.summary,
-        start: { dateTime: event.start },
-        end: { dateTime: event.end },
+        summary: eventData.summary,
+        start: { dateTime: eventData.start },
+        end: { dateTime: eventData.end },
       },
     });
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (error: any) {
-    return new Response("Error: " + error.message, { status: 500 });
+    return new Response("AI Error: " + error.message, { status: 500 });
   }
 }

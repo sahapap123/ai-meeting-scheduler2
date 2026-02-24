@@ -21,13 +21,14 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, account }: any) {
       if (account) {
-        token.accessToken = account.access_token;
-        token.refreshToken = account.refresh_token;
+        // แก้ไขให้ TypeScript ยอมรับค่าโดยใช้การยืนยันชนิดข้อมูล
+        token.accessToken = (account.access_token as string) || "";
+        token.refreshToken = (account.refresh_token as string) || "";
       }
       return token;
     },
     async session({ session, token }: any) {
-      session.accessToken = token.accessToken;
+      (session as any).accessToken = token.accessToken;
       return session;
     },
   },

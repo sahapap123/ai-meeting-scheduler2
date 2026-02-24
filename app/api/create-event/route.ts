@@ -12,8 +12,9 @@ export async function POST(req: Request) {
 
   try {
     const { prompt } = await req.json();
-    // แก้ไขชื่อโมเดลเป็น gemini-1.5-flash-latest เพื่อป้องกัน Error 404
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    
+    // ✅ แก้จุดตาย: เปลี่ยนมาใช้ 'gemini-pro' ตัวมาตรฐาน ใช้ได้ชัวร์
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     
     const aiPrompt = `Extract event data from: "${prompt}". Return ONLY JSON: {"summary":"Title+Emoji","start":"ISO String","end":"ISO String"}`;
 

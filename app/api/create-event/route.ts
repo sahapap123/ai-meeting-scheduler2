@@ -8,18 +8,23 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(req: Request) {
   const session: any = await getServerSession(authOptions);
-  if (!session || !session.accessToken) return new Response("กรุณาล็อกอินใหม่ (Token หาย)", { status: 401 });
+  if (!session || !session.accessToken) return new Response("Unauthorized", { status: 401 });
 
   try {
     const { prompt } = await req.json();
+    // เปลี่ยนมาใช้โมเดล gemini-1.5-flash ที่เสถียรกว่า
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
-    const aiPrompt = `Extract event from: "${prompt}". Current time: ${new Date().toISOString()}. 
-    Return ONLY JSON: {"summary": "Title with emoji", "start": "ISO string", "end": "ISO string"}`;
+    const aiPrompt = `คุณคือผู้ช่วยจัดการตารางเวลา ให้ข้อมูลจากข้อความ: "${prompt}". 
+    เวลาปัจจุบัน: ${new Date().toISOString()}. 
+    ตอบกลับเป็น JSON เท่านั้น ห้ามมีคำอธิบาย: {"summary": "ชื่อนัดหมาย+อีโมจิ", "start": "ISO String", "end": "ISO String"}`;
 
     const result = await model.generateContent(aiPrompt);
-    const text = result.response.text().replace(/```json|```/g, "").trim();
-    const eventDetails = JSON.parse(text);
+    const responseText = result.response.text();
+    
+    // ล้างเครื่องหมาย ```json ออกก่อนนำไปใช้
+    const cleanJson = responseText.replace(/```json|```/g, "").trim();
+    const eventDetails = JSON.parse(cleanJson);
 
     const oauth2Client = new google.auth.OAuth2();
     oauth2Client.setCredentials({ access_token: session.accessToken });
@@ -29,13 +34,14 @@ export async function POST(req: Request) {
       calendarId: 'primary',
       requestBody: {
         summary: eventDetails.summary,
-        start: { dateTime: eventDetails.start },
-        end: { dateTime: eventDetails.end },
+        start: { dateTime: eventDetails.start, timeZone: 'Asia/Bangkok' },
+        end: { dateTime: eventDetails.end, timeZone: 'Asia/Bangkok' },
       },
     });
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (error: any) {
+    // ส่ง Error ออกไปให้ Alert เห็นชัดๆ
     return new Response("AI หรือ Google ขัดข้อง: " + error.message, { status: 500 });
   }
 }

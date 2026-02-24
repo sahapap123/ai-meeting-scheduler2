@@ -51,8 +51,9 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, account }: any) {
       if (account) {
-        token.accessToken = account.access_token;
-        token.refreshToken = account.refresh_token;
+        // แก้ตัวแดง: ใช้ ?? "" เพื่อป้องกันค่า undefined
+        token.accessToken = account.access_token ?? "";
+        token.refreshToken = account.refresh_token ?? "";
         token.accessTokenExpires = Date.now() + (account.expires_at ?? 3600) * 1000;
       }
       if (Date.now() < (token.accessTokenExpires as number)) return token;

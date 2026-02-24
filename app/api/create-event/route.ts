@@ -2,9 +2,6 @@
 import { google } from 'googleapis';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(req: Request) {
   const session: any = await getServerSession(authOptions);
@@ -12,17 +9,32 @@ export async function POST(req: Request) {
 
   try {
     const { prompt } = await req.json();
+    const apiKey = process.env.GEMINI_API_KEY;
     
-    // ✅ แก้จุดตาย: เปลี่ยนมาใช้ 'gemini-pro' ตัวมาตรฐาน ใช้ได้ชัวร์
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    
-    const aiPrompt = `Extract event data from: "${prompt}". Return ONLY JSON: {"summary":"Title+Emoji","start":"ISO String","end":"ISO String"}`;
+    // คำสั่ง Prompt
+    const aiPrompt = `คุณคือผู้ช่วยจัดการเวลา วิเคราะห์ข้อมูลจาก: "${prompt}". เวลาปัจจุบันคือ: ${new Date().toISOString()}. คืนค่าเป็น JSON เท่านั้น: {"summary":"ชื่อนัดหมายพร้อมอีโมจิ","start":"เวลาเริ่มแบบ ISO String","end":"เวลาจบแบบ ISO String (บวก 1 ชม.ถ้าไม่ระบุ)"}`;
 
-    const result = await model.generateContent(aiPrompt);
-    const responseText = result.response.text();
+    // ยิงตรงไปหาเซิร์ฟเวอร์ Gemini แบบไม่ผ่าน Library! (แก้บั๊ก 404 เด็ดขาด)
+    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: aiPrompt }] }]
+      })
+    });
+
+    const geminiData = await geminiRes.json();
+    
+    if (!geminiRes.ok) {
+      throw new Error(geminiData.error?.message || "เชื่อมต่อ Gemini ไม่ได้");
+    }
+
+    // แกะข้อความ JSON ออกมา
+    const responseText = geminiData.candidates[0].content.parts[0].text;
     const cleanJson = responseText.replace(/```json|```/g, "").trim();
     const eventData = JSON.parse(cleanJson);
 
+    // ส่งเข้าปฏิทิน Google
     const auth = new google.auth.OAuth2();
     auth.setCredentials({ access_token: session.accessToken });
     const calendar = google.calendar({ version: 'v3', auth });

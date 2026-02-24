@@ -1,9 +1,10 @@
+// app/api/auth/[...nextauth]/route.ts
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import type { JWT } from "next-auth/jwt";
 import type { Session, Account } from "next-auth";
 
-// รีเฟรช access_token ด้วย refresh_token ของ Google
+// ฟังก์ชันสำหรับรีเฟรช access_token เมื่อหมดอายุ
 async function refreshAccessToken(token: any) {
   try {
     const params = new URLSearchParams({
@@ -25,13 +26,12 @@ async function refreshAccessToken(token: any) {
     return {
       ...token,
       accessToken: data.access_token,
-      // expires_in เป็นวินาที → แปลงเป็น ms และเผื่อเวลา 30 วิ
       accessTokenExpires: Date.now() + (data.expires_in ?? 3600) * 1000 - 30_000,
-      // ถ้าไม่คืน refresh_token มารอบรีเฟรช ให้ใช้ตัวเดิม
       refreshToken: data.refresh_token ?? token.refreshToken,
       error: undefined,
     };
-  } catch {
+  } catch (error) {
+    console.error("Error refreshing access token", error);
     return { ...token, error: "RefreshAccessTokenError" as const };
   }
 }
@@ -65,52 +65,41 @@ export const authOptions: NextAuthOptions = {
   pages: { signIn: "/login" },
 
   callbacks: {
-    async jwt({
-      token,
-      account,
-    }: {
-      token: JWT & {
-        accessToken?: string;
-        refreshToken?: string;
-        accessTokenExpires?: number;
-        error?: "RefreshAccessTokenError" | "NoRefreshToken";
-      };
-      account: Account | null;
-    }) {
-      // เพิ่งล็อกอินครั้งแรก → รับค่าจาก Google
+    async jwt({ token, account }) {
+      // เมื่อล็อกอินครั้งแรก
       if (account) {
-        // ถ้า Google ไม่ส่งมา ให้คงค่าเดิมไว้ (กัน undefined)
-        token.accessToken = account.access_token ?? token.accessToken;
-        token.refreshToken = account.refresh_token ?? token.refreshToken;
-
-        const expiresSec = account.expires_at ?? 3600; // วินาที
+        token.accessToken = account.access_token;
+        token.refreshToken = account.refresh_token;
+        const expiresSec = account.expires_at ?? 3600;
         token.accessTokenExpires = Date.now() + expiresSec * 1000 - 30_000;
         return token;
       }
 
-      // ยังไม่หมดอายุ → ใช้ต่อ
-      if (token.accessToken && token.accessTokenExpires && Date.now() < token.accessTokenExpires) {
+      // ถ้า token ยังไม่หมดอายุ
+      if (token.accessTokenExpires && Date.now() < (token.accessTokenExpires as number)) {
         return token;
       }
 
-      // หมดอายุแล้ว → รีเฟรช (ต้องมี refreshToken)
+      // ถ้าหมดอายุแล้ว ให้รีเฟรช
       if (token.refreshToken) {
         return await refreshAccessToken(token);
       }
 
-      // ไม่มี refreshToken → ให้ไปล็อกอินใหม่
       return { ...token, error: "NoRefreshToken" };
     },
 
-    async session({
-      session,
-      token,
-    }: {
-      session: Session & { accessToken?: string; error?: string };
-      token: JWT & { accessToken?: string; error?: string };
-    }) {
-      (session as any).accessToken = (token as any).accessToken;
-      (session as any).error = (token as any).error;
+    // --- ส่วนที่ปรับปรุงใหม่ พร้อมระบบตรวจสอบ Log ---
+    async session({ session, token }: { session: any; token: any }) {
+      session.accessToken = token.accessToken;
+      session.error = token.error;
+
+      // ตรวจสอบสถานะ Token ในหน้าจอ Terminal (Vercel Logs)
+      if (session.accessToken) {
+        console.log("✅ [Auth Success] Session has accessToken");
+      } else {
+        console.log("❌ [Auth Error] Session MISSING accessToken");
+      }
+
       return session;
     },
 

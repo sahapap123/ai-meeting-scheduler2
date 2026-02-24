@@ -3,7 +3,7 @@ import { google } from 'googleapis';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-// --- ปิดระบบจำข้อมูลเก่าของ Next.js (สำคัญมาก!) ---
+// 🔥 บรรทัดนี้สำคัญมาก! สั่งให้ Next.js ห้ามจำค่าเก่า (No Cache)
 export const dynamic = 'force-dynamic'; 
 
 export async function GET() {
@@ -15,13 +15,14 @@ export async function GET() {
     auth.setCredentials({ access_token: session.accessToken });
     const calendar = google.calendar({ version: 'v3', auth });
 
-    // ตั้งต้นดึงข้อมูลตั้งแต่เวลา 00:00 น. ของวันนี้ (เวลาไทย)
+    // ตั้งเวลาเริ่มต้นค้นหา: "00:00 น. ของวันนี้ (เวลาไทย)"
+    // เพื่อให้เห็นนัดหมายของวันนี้ทั้งหมด
     const nowTH = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
     nowTH.setHours(0, 0, 0, 0);
 
     const response = await calendar.events.list({
       calendarId: 'primary',
-      timeMin: nowTH.toISOString(),
+      timeMin: nowTH.toISOString(), // ค้นหาตั้งแต่วันนี้เป็นต้นไป
       maxResults: 20,
       singleEvents: true,
       orderBy: 'startTime',

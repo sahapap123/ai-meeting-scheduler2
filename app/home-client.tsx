@@ -11,11 +11,8 @@ export default function HomeClient() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [aiLog, setAiLog] = useState<string>('> SYSTEM ONLINE. AWAITING COMMAND...');
-  
-  // 🌟 State สำหรับระบบ Theme (เริ่มต้นเป็นโหมด Dark)
   const [isDark, setIsDark] = useState(true);
 
-  // เปลี่ยนสีพื้นหลังของทั้งหน้าเว็บ (Body) แบบ Real-time
   useEffect(() => {
     document.body.style.backgroundColor = isDark ? '#121212' : '#e9ecef';
     document.body.style.transition = 'background-color 0.5s ease';
@@ -60,12 +57,11 @@ export default function HomeClient() {
     finally { setLoading(false); }
   };
 
-  // 🌟 ชุดสีอัจฉริยะ (สลับตามโหมด)
   const theme = {
     cardBg: isDark ? 'rgba(15, 15, 25, 0.85)' : '#ffffff',
     textMain: isDark ? '#ffffff' : '#333333',
     textDim: isDark ? '#8892b0' : '#6c757d',
-    accent: isDark ? '#00f3ff' : '#0056b3', // ฟ้าไซเบอร์ vs น้ำเงินเข้ม
+    accent: isDark ? '#00f3ff' : '#0056b3', 
     terminalBg: isDark ? '#05050a' : '#f4f7f6',
     terminalText: isDark ? '#00ff41' : '#0066cc',
     terminalBorder: isDark ? 'rgba(0, 255, 65, 0.4)' : 'rgba(0, 102, 204, 0.4)',
@@ -79,7 +75,7 @@ export default function HomeClient() {
       <div className="logo-glow-container mx-auto">
         <Image src="/icon.png" alt="Logo" width={70} height={70} />
       </div>
-      <h1 className="pixel-font mb-4">AI Scheduler</h1>
+      <h1 className="pixel-font mb-4">AI SCHEDULER</h1>
       <button className="cyber-btn-primary w-100" onClick={() => signIn('google')}>Login with Google</button>
     </div>
   );
@@ -91,12 +87,11 @@ export default function HomeClient() {
       transition: 'all 0.4s ease',
       boxShadow: isDark ? '0 0 20px rgba(0,243,255,0.1)' : '0 10px 30px rgba(0,0,0,0.1)'
     }}>
-      {/* ส่วนหัว + ปุ่มสลับธีม */}
       <div className="d-flex justify-content-between mb-4 align-items-center">
-        <span className="pixel-font" style={{ color: theme.accent, textShadow: isDark ? '0 0 5px #00f3ff' : 'none' }}>NEURAL_LINK_v1.0</span>
+        {/* 🌟 เปลี่ยนชื่อตรงนี้กลับเป็น AI SCHEDULER 1.0 🌟 */}
+        <span className="pixel-font" style={{ color: theme.accent, textShadow: isDark ? '0 0 5px #00f3ff' : 'none' }}>AI SCHEDULER 1.0</span>
         
         <div>
-          {/* ปุ่มสลับโหมด */}
           <button 
             className="btn btn-sm me-2" 
             onClick={() => setIsDark(!isDark)}
@@ -104,12 +99,10 @@ export default function HomeClient() {
           >
             {isDark ? '☀️ Light' : '🌙 Dark'}
           </button>
-          
           <button className="btn btn-sm btn-outline-danger" style={{borderRadius: '4px'}} onClick={() => signOut()}>DISCONNECT</button>
         </div>
       </div>
       
-      {/* หน้าจอ AI Terminal */}
       <div className="mb-4 p-3" style={{
         backgroundColor: theme.terminalBg,
         border: `1px solid ${theme.terminalBorder}`,
@@ -124,7 +117,6 @@ export default function HomeClient() {
         <span style={{ animation: 'blink 1s step-end infinite' }}>█</span> {aiLog}
       </div>
 
-      {/* ส่วนกรอกข้อมูล */}
       <div className="mb-4">
         <div className="cyber-input-group d-flex" style={{ position: 'relative' }}>
           <input 
@@ -162,7 +154,6 @@ export default function HomeClient() {
         </div>
       </div>
 
-      {/* ส่วนแสดงตารางนัดหมาย */}
       <div className="flex-grow-1 overflow-auto mt-2">
         <h6 className="mb-3" style={{ color: theme.textDim, fontSize: '0.8rem', letterSpacing: '1px' }}>/// SCHEDULE_DATABASE:</h6>
         

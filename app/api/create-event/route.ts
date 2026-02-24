@@ -17,50 +17,57 @@ function extractEventData(rawText: string) {
   let targetDate = new Date(now);
   let summary = text;
 
-  // --- 1. ความฉลาดใหม่: รู้จัก "วันที่ X" ---
+  // --- 1. จับวัน (วันที่ X, พรุ่งนี้, มะรืน) ---
   const dateMatch = text.match(/วันที่\s*(\d{1,2})/);
   if (dateMatch) {
     targetDate.setDate(parseInt(dateMatch[1]));
-    // ลบคำว่า วันที่ 25 ออกจากชื่อ
-    summary = summary.replace(dateMatch[0], "").trim();
+    summary = summary.replace(dateMatch[0], "");
   } else if (text.includes("พรุ่งนี้")) {
     targetDate.setDate(now.getDate() + 1);
-    summary = summary.replace(/พรุ่งนี้/g, "").trim();
+    summary = summary.replace(/พรุ่งนี้/g, "");
   } else if (text.includes("มะรืน")) {
     targetDate.setDate(now.getDate() + 2);
-    summary = summary.replace(/มะรืน/g, "").trim();
+    summary = summary.replace(/มะรืน/g, "");
   }
 
-  // --- 2. การจับเวลาที่แม่นยำขึ้น ---
+  // --- 2. จับเวลาและ keyword ---
   let hour = now.getHours() + 1;
   let minute = 0;
 
-  const exactTime = text.match(/(\d{1,2})[:.](\d{2})/); // จับ 14.30 หรือ 14:30
-  const keywordTime = text.match(/(\d{1,2})\s*(โมง|ทุ่ม|บ่าย|เช้า|น\.|am|pm)/); // จับ 9 โมง
+  // Regex จับเวลาแบบละเอียด (9.30, 14:00) และแบบพูด (9 โมง)
+  const exactTime = text.match(/(\d{1,2})[:.](\d{2})/);
+  const keywordTime = text.match(/(\d{1,2})\s*(โมง|ทุ่ม|บ่าย|เช้า|น\.|am|pm|นาฬิกา)?/);
 
   if (exactTime) {
     hour = parseInt(exactTime[1]);
     minute = parseInt(exactTime[2]);
-    summary = summary.replace(exactTime[0], "").trim();
+    // ลบเวลาที่จับได้ออกจากชื่อ
+    summary = summary.replace(exactTime[0], "");
   } else if (keywordTime) {
     let h = parseInt(keywordTime[1]);
-    const keyword = keywordTime[2];
+    const keyword = (keywordTime[2] || "").toLowerCase();
     
-    if (keyword === "ทุ่ม") {
+    // แปลงเวลาพูดเป็น 24 ชม.
+    if (text.includes("ทุ่ม") || keyword === "ทุ่ม") {
       h = h < 12 ? h + 18 : h;
-    } else if (keyword === "บ่าย" || keyword === "pm") {
+    } else if (text.includes("บ่าย") || keyword === "บ่าย" || keyword === "pm") {
       if (h < 12) h += 12;
-    } else if (text.includes("เย็น")) {
+    } else if (text.includes("เย็น") || text.includes("ค่ำ")) {
       h = h < 12 ? h + 12 : h;
+    } else if (text.includes("ตี")) {
+      // ตี 5 = 05:00 (ปกติ)
     }
     
     hour = h;
     minute = 0;
-    summary = summary.replace(keywordTime[0], "").trim();
+    // ลบตัวเลขเวลาที่จับได้ออกจากชื่อ
+    summary = summary.replace(keywordTime[0], "");
   }
 
-  // --- 3. ลบคำขยะทิ้งให้ชื่อดูโปร ---
-  summary = summary.replace(/เดือนนี้/g, "").replace(/เวลา/g, "").trim();
+  // --- 3. Big Cleaning: ลบคำขยะที่เหลือออกให้หมด ---
+  // ลบคำบอกช่วงเวลาที่อาจหลงเหลืออยู่
+  const junkWords = /เย็น|เช้า|บ่าย|ค่ำ|สาย|ดึก|โมง|นาฬิกา|น\.|เวลา|เดือนนี้/g;
+  summary = summary.replace(junkWords, "").trim();
 
   // ประกอบร่างเวลา
   const y = targetDate.getFullYear();
@@ -74,7 +81,6 @@ function extractEventData(rawText: string) {
   const endRFC = `${y}-${mStr}-${dStr}T${pad(endHour)}:${pad(minute)}:00+07:00`;
 
   return {
-    // ถ้าพิมพ์มาแค่วันที่กับเวลา ไม่มีชื่อ ให้ตั้งชื่ออัตโนมัติว่า "นัดหมาย"
     summary: (summary || "นัดหมาย") + " 🤖",
     start: startRFC,
     end: endRFC

@@ -33,8 +33,7 @@ export default function HomeClient() {
       });
       if (res.ok) {
         setPrompt('');
-        alert("✨ สร้างสำเร็จ!");
-        fetchEvents();
+        fetchEvents(); // ดึงข้อมูลใหม่มาโชว์ทันที
       } else {
         const msg = await res.text();
         alert("พังครับ: " + msg);
@@ -54,26 +53,69 @@ export default function HomeClient() {
   );
 
   return (
-    <div className="cyber-card">
+    <div className="cyber-card d-flex flex-column" style={{ minHeight: '80vh' }}>
+      {/* ส่วนหัว */}
       <div className="d-flex justify-content-between mb-4">
-        <span className="pixel-font" style={{color:'var(--neon-cyan)'}}>AI MS v1.0</span>
+        <span className="pixel-font" style={{color:'var(--neon-cyan, #00f3ff)'}}>AI MS v1.0</span>
         <button className="btn btn-sm btn-outline-light" onClick={() => signOut()}>Logout</button>
       </div>
-      <h2 className="pixel-font text-center mb-4" style={{fontSize:'1.2rem'}}>MY SCHEDULE</h2>
+      
+      <h2 className="pixel-font text-center mb-4" style={{fontSize:'1.2rem', letterSpacing: '2px'}}>MY SCHEDULE</h2>
+      
+      {/* ส่วนกรอกข้อมูล */}
       <div className="mb-4">
-        <div className="cyber-input-group">
-          <input className="cyber-input" value={prompt} onChange={(e)=>setPrompt(e.target.value)} placeholder="พิมพ์นัดหมาย..." />
-          <VoiceButton onTranscript={(t)=>setPrompt(t)} />
-          <button className="cyber-btn-primary ms-2" onClick={handleCreate} disabled={loading}>{loading ? '...' : 'สร้าง'}</button>
+        <div className="cyber-input-group d-flex">
+          <input 
+            className="cyber-input flex-grow-1" 
+            value={prompt} 
+            onChange={(e)=>setPrompt(e.target.value)} 
+            placeholder="พิมพ์นัดหมาย..." 
+            disabled={loading}
+          />
+          <div className="mx-2">
+            <VoiceButton onTranscript={(t)=>setPrompt(t)} />
+          </div>
+          <button className="cyber-btn-primary" onClick={handleCreate} disabled={loading}>
+            {loading ? '...' : 'สร้าง'}
+          </button>
         </div>
       </div>
-      <div className="flex-grow-1">
-        {events.length > 0 ? events.map((ev, i) => (
-          <div key={i} className="schedule-item">
-            <span className="schedule-time">{new Date(ev.start.dateTime || ev.start.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-            <span>{ev.summary}</span>
+
+      {/* ส่วนแสดงตารางนัดหมาย (ออกแบบใหม่) */}
+      <div className="flex-grow-1 overflow-auto mt-2">
+        <h6 className="mb-3" style={{ color: 'var(--text-dim, #8892b0)', fontSize: '0.9rem' }}>รายการนัดหมายของคุณ:</h6>
+        
+        {events.length > 0 ? events.map((ev, i) => {
+          // จัดฟอร์แมตวันที่และเวลาให้อ่านง่าย
+          const dateObj = new Date(ev.start.dateTime || ev.start.date);
+          const timeStr = dateObj.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
+          const dateStr = dateObj.toLocaleDateString('th-TH', {day: 'numeric', month: 'short'});
+
+          return (
+            <div key={i} className="d-flex align-items-center mb-3 p-3" style={{
+              backgroundColor: 'rgba(20, 20, 35, 0.6)',
+              border: '1px solid rgba(0, 243, 255, 0.2)',
+              borderLeft: '4px solid var(--neon-cyan, #00f3ff)',
+              borderRadius: '8px',
+              transition: 'all 0.3s ease'
+            }}>
+              {/* กล่องเวลาด้านซ้าย */}
+              <div className="text-center me-3" style={{ minWidth: '70px', borderRight: '1px solid rgba(255,255,255,0.1)', paddingRight: '12px' }}>
+                <div style={{ fontSize: '0.75rem', color: '#8892b0' }}>{dateStr}</div>
+                <div style={{ color: 'var(--neon-cyan, #00f3ff)', fontWeight: 'bold', fontSize: '1.1rem' }}>{timeStr}</div>
+              </div>
+              
+              {/* ชื่อตารางด้านขวา */}
+              <div className="text-light text-truncate" style={{ fontSize: '1rem' }}>
+                {ev.summary}
+              </div>
+            </div>
+          );
+        }) : (
+          <div className="text-center p-4 mt-4" style={{ border: '1px dashed rgba(255,255,255,0.2)', borderRadius: '8px' }}>
+            <p className="mb-0" style={{ color: '#8892b0' }}>ไม่มีนัดหมายในระบบ</p>
           </div>
-        )) : <p className="text-center text-dim mt-5">ไม่มีนัดหมาย</p>}
+        )}
       </div>
     </div>
   );

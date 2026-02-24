@@ -1,12 +1,22 @@
-// app/page.tsx
-import NavBar from "@/components/NavBar";
-import HomeClient from "./home-client";   // ✅ ไม่ต้องใส่ "app/" ซ้ำ
+// app/layout.tsx
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './globals.css';
+import Providers from './providers';
 
-export default function Page() {
+export const metadata = {
+  title: "AI Scheduler",
+  icons: { icon: '/icon.png' },
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <main className="container py-4">
-      <NavBar />
-      <HomeClient />
-    </main>
+    <html lang="th">
+      <body className="bg-dark">
+        <Providers>
+          {/* ลบ NavBar ออกไปแล้ว จะไม่มีแถบขาวแน่นอนครับ */}
+          <main className="w-100 min-vh-100">{children}</main>
+        </Providers>
+      </body>
+    </html>
   );
 }

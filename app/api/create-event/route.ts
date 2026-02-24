@@ -34,20 +34,17 @@ function extractEventData(rawText: string) {
   let hour = now.getHours() + 1;
   let minute = 0;
 
-  // Regex จับเวลาแบบละเอียด (9.30, 14:00) และแบบพูด (9 โมง)
   const exactTime = text.match(/(\d{1,2})[:.](\d{2})/);
   const keywordTime = text.match(/(\d{1,2})\s*(โมง|ทุ่ม|บ่าย|เช้า|น\.|am|pm|นาฬิกา)?/);
 
   if (exactTime) {
     hour = parseInt(exactTime[1]);
     minute = parseInt(exactTime[2]);
-    // ลบเวลาที่จับได้ออกจากชื่อ
     summary = summary.replace(exactTime[0], "");
   } else if (keywordTime) {
     let h = parseInt(keywordTime[1]);
     const keyword = (keywordTime[2] || "").toLowerCase();
     
-    // แปลงเวลาพูดเป็น 24 ชม.
     if (text.includes("ทุ่ม") || keyword === "ทุ่ม") {
       h = h < 12 ? h + 18 : h;
     } else if (text.includes("บ่าย") || keyword === "บ่าย" || keyword === "pm") {
@@ -55,18 +52,17 @@ function extractEventData(rawText: string) {
     } else if (text.includes("เย็น") || text.includes("ค่ำ")) {
       h = h < 12 ? h + 12 : h;
     } else if (text.includes("ตี")) {
-      // ตี 5 = 05:00 (ปกติ)
+      // ตี 5 = 05:00
     }
     
     hour = h;
     minute = 0;
-    // ลบตัวเลขเวลาที่จับได้ออกจากชื่อ
     summary = summary.replace(keywordTime[0], "");
   }
 
-  // --- 3. Big Cleaning: ลบคำขยะที่เหลือออกให้หมด ---
-  // ลบคำบอกช่วงเวลาที่อาจหลงเหลืออยู่
-  const junkWords = /เย็น|เช้า|บ่าย|ค่ำ|สาย|ดึก|โมง|นาฬิกา|น\.|เวลา|เดือนนี้/g;
+  // --- 3. Big Cleaning: เพิ่มคำเชื่อมลงไปในถังขยะ! ---
+  // เพิ่มคำว่า "ตอน", "ช่วง", "ประมาณ", "วัน" ให้มันลบทิ้งให้หมด
+  const junkWords = /เย็น|เช้า|บ่าย|ค่ำ|สาย|ดึก|โมง|นาฬิกา|น\.|เวลา|เดือนนี้|ตอน|ช่วง|ประมาณ/g;
   summary = summary.replace(junkWords, "").trim();
 
   // ประกอบร่างเวลา

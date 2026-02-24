@@ -3,56 +3,56 @@ import { google } from 'googleapis';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-// --- ฟังก์ชันสมองกล (Fake AI Logic) ---
+// --- สมองกลคำนวณเวลาไทย (รอดชัวร์ 100%) ---
 function extractEventData(text: string) {
-  const now = new Date();
+  // 1. ดึงเวลาปัจจุบัน และบังคับให้เป็นโซนเวลา "กรุงเทพฯ" ทันที
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
   let targetDate = new Date(now);
-  let summary = text; // ใช้ข้อความเดิมเป็นชื่อนัดหมายไปก่อน
+  let summary = text;
 
-  // 1. เช็ควัน: "พรุ่งนี้"
+  // 2. เช็คคำว่า พรุ่งนี้
   if (text.includes("พรุ่งนี้")) {
     targetDate.setDate(now.getDate() + 1);
     summary = summary.replace("พรุ่งนี้", "").trim();
-  } else if (text.includes("มะรืน")) {
-    targetDate.setDate(now.getDate() + 2);
-    summary = summary.replace("มะรืน", "").trim();
   }
 
-  // 2. เช็คเวลา (รองรับ: 9 โมง, 10.30, 14:00)
-  let hour = now.getHours() + 1; // ค่า Default: ชั่วโมงถัดไป
+  // 3. จับตัวเลขเวลา
+  let hour = now.getHours() + 1; // Default: อีก 1 ชม.
   let minute = 0;
 
-  // Regex จับเวลาแบบต่างๆ
-  const timeMatch = text.match(/(\d{1,2})[:.]?(\d{2})?\s*(โมง|น\.|am|pm)?/);
-  
+  const timeMatch = text.match(/(\d{1,2})[:.]?(\d{2})?/);
   if (timeMatch) {
     let h = parseInt(timeMatch[1]);
     let m = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-    
-    // แปลง "บ่าย X โมง" หรือ "2 pm"
-    if (text.includes("บ่าย") || text.includes("pm") || (text.includes("เย็น") && h < 12)) {
-      if (h < 12) h += 12;
+
+    // แปลงเวลาแบบคนไทย
+    if (text.includes("ทุ่ม")) {
+      h = h < 6 ? h + 18 : h; // 1 ทุ่ม = 19
+    } else if (text.includes("บ่าย")) {
+      h = h < 6 ? h + 12 : h; // บ่าย 2 = 14
+    } else if (text.includes("เย็น") || text.includes("กลางคืน")) {
+      h = h < 12 ? h + 12 : h; // 5 โมงเย็น = 17, 9 โมงเย็น = 21
     }
-    // กรณีพิมพ์ 9 โมง (เช้า)
-    else if (text.includes("เช้า") || text.includes("am")) {
-       // ไม่ต้องทำอะไร
-    }
-    
+
     hour = h;
     minute = m;
   }
 
-  // ตั้งเวลา Start
-  targetDate.setHours(hour, minute, 0, 0);
-
-  // ตั้งเวลา End (บวก 1 ชม.)
-  const endDate = new Date(targetDate);
-  endDate.setHours(hour + 1);
+  // 4. บังคับสร้าง String เวลาแบบ Local (ไม่มี Z ตัวอักษรอเมริกาต่อท้าย)
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const y = targetDate.getFullYear();
+  const m = pad(targetDate.getMonth() + 1);
+  const d = pad(targetDate.getDate());
+  
+  // เวลาเริ่ม
+  const startString = `${y}-${m}-${d}T${pad(hour)}:${pad(minute)}:00`;
+  // เวลาจบ (บวก 1 ชม.)
+  const endString = `${y}-${m}-${d}T${pad(hour === 23 ? 23 : hour + 1)}:${pad(minute)}:00`;
 
   return {
-    summary: summary + " (AI)", // เติมท้ายให้รู้ว่าระบบทำงาน
-    start: targetDate.toISOString(),
-    end: endDate.toISOString()
+    summary: summary + " 🎯", // ใส่เป้ายิงให้รู้ว่าติดสมองกลตัวใหม่แล้ว
+    start: startString,
+    end: endString
   };
 }
 
@@ -63,12 +63,10 @@ export async function POST(req: Request) {
   try {
     const { prompt } = await req.json();
 
-    // --- เรียกใช้สมองกลที่เราเขียนเอง (ไม่ต้องง้อ Google) ---
+    // เรียกใช้ฟังก์ชันเวลาไทยของเรา
     const eventData = extractEventData(prompt);
 
-    console.log("Creating event:", eventData); // ดู Log ใน Vercel ได้เลย
-
-    // --- ส่งเข้า Google Calendar ---
+    // ส่งให้ Google Calendar (พร้อมระบุว่านี่คือเวลาไทยนะ!)
     const auth = new google.auth.OAuth2();
     auth.setCredentials({ access_token: session.accessToken });
     const calendar = google.calendar({ version: 'v3', auth });
@@ -77,8 +75,8 @@ export async function POST(req: Request) {
       calendarId: 'primary',
       requestBody: {
         summary: eventData.summary,
-        start: { dateTime: eventData.start, timeZone: 'Asia/Bangkok' }, // ระบุ TimeZone ให้ชัด
-        end: { dateTime: eventData.end, timeZone: 'Asia/Bangkok' },
+        start: { dateTime: eventData.start, timeZone: 'Asia/Bangkok' }, // บังคับเป็นไทย
+        end: { dateTime: eventData.end, timeZone: 'Asia/Bangkok' }, // บังคับเป็นไทย
       },
     });
 

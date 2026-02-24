@@ -3,42 +3,72 @@ import { google } from 'googleapis';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
+// --- ฟังก์ชันสมองกล (Fake AI Logic) ---
+function extractEventData(text: string) {
+  const now = new Date();
+  let targetDate = new Date(now);
+  let summary = text; // ใช้ข้อความเดิมเป็นชื่อนัดหมายไปก่อน
+
+  // 1. เช็ควัน: "พรุ่งนี้"
+  if (text.includes("พรุ่งนี้")) {
+    targetDate.setDate(now.getDate() + 1);
+    summary = summary.replace("พรุ่งนี้", "").trim();
+  } else if (text.includes("มะรืน")) {
+    targetDate.setDate(now.getDate() + 2);
+    summary = summary.replace("มะรืน", "").trim();
+  }
+
+  // 2. เช็คเวลา (รองรับ: 9 โมง, 10.30, 14:00)
+  let hour = now.getHours() + 1; // ค่า Default: ชั่วโมงถัดไป
+  let minute = 0;
+
+  // Regex จับเวลาแบบต่างๆ
+  const timeMatch = text.match(/(\d{1,2})[:.]?(\d{2})?\s*(โมง|น\.|am|pm)?/);
+  
+  if (timeMatch) {
+    let h = parseInt(timeMatch[1]);
+    let m = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+    
+    // แปลง "บ่าย X โมง" หรือ "2 pm"
+    if (text.includes("บ่าย") || text.includes("pm") || (text.includes("เย็น") && h < 12)) {
+      if (h < 12) h += 12;
+    }
+    // กรณีพิมพ์ 9 โมง (เช้า)
+    else if (text.includes("เช้า") || text.includes("am")) {
+       // ไม่ต้องทำอะไร
+    }
+    
+    hour = h;
+    minute = m;
+  }
+
+  // ตั้งเวลา Start
+  targetDate.setHours(hour, minute, 0, 0);
+
+  // ตั้งเวลา End (บวก 1 ชม.)
+  const endDate = new Date(targetDate);
+  endDate.setHours(hour + 1);
+
+  return {
+    summary: summary + " (AI)", // เติมท้ายให้รู้ว่าระบบทำงาน
+    start: targetDate.toISOString(),
+    end: endDate.toISOString()
+  };
+}
+
 export async function POST(req: Request) {
   const session: any = await getServerSession(authOptions);
   if (!session?.accessToken) return new Response("Unauthorized", { status: 401 });
 
   try {
     const { prompt } = await req.json();
-    const apiKey = process.env.GEMINI_API_KEY;
 
-    // --- 🌟 ระบบกันตาย (Fallback): เตรียมข้อมูลพื้นฐานไว้ก่อน ---
-    let eventData = {
-      summary: prompt + " 🤖", // เอาคำสั่งที่พิมพ์มาตั้งเป็นชื่อนัดหมายซะเลย
-      start: new Date().toISOString(), // เริ่มเดี๋ยวนี้
-      end: new Date(Date.now() + 60 * 60 * 1000).toISOString() // จบในอีก 1 ชม.
-    };
+    // --- เรียกใช้สมองกลที่เราเขียนเอง (ไม่ต้องง้อ Google) ---
+    const eventData = extractEventData(prompt);
 
-    // --- พยายามเรียก AI (gemini-pro) ---
-    try {
-      const aiPrompt = `คุณคือผู้ช่วยจัดการเวลา วิเคราะห์ข้อมูลจาก: "${prompt}". เวลาปัจจุบันคือ: ${new Date().toISOString()}. คืนค่าเป็น JSON เท่านั้น: {"summary":"ชื่อนัดหมายพร้อมอีโมจิ","start":"เวลาเริ่มแบบ ISO String","end":"เวลาจบแบบ ISO String"}`;
+    console.log("Creating event:", eventData); // ดู Log ใน Vercel ได้เลย
 
-      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: aiPrompt }] }] })
-      });
-
-      if (geminiRes.ok) {
-        const geminiData = await geminiRes.json();
-        const responseText = geminiData.candidates[0].content.parts[0].text;
-        const cleanJson = responseText.replace(/```json|```/g, "").trim();
-        eventData = JSON.parse(cleanJson); // ถ้า AI ฉลาดตอบกลับมา ก็ใช้ของ AI
-      }
-    } catch (aiError) {
-      console.log("AI ขัดข้อง, สลับใช้ระบบกันตาย"); // ถ้า AI พัง ระบบจะข้ามไปใช้ข้อมูลพื้นฐานที่เตรียมไว้แทน
-    }
-
-    // --- ส่งข้อมูลเข้า Google Calendar (ทำงาน 100% แน่นอน) ---
+    // --- ส่งเข้า Google Calendar ---
     const auth = new google.auth.OAuth2();
     auth.setCredentials({ access_token: session.accessToken });
     const calendar = google.calendar({ version: 'v3', auth });
@@ -47,13 +77,13 @@ export async function POST(req: Request) {
       calendarId: 'primary',
       requestBody: {
         summary: eventData.summary,
-        start: { dateTime: eventData.start },
-        end: { dateTime: eventData.end },
+        start: { dateTime: eventData.start, timeZone: 'Asia/Bangkok' }, // ระบุ TimeZone ให้ชัด
+        end: { dateTime: eventData.end, timeZone: 'Asia/Bangkok' },
       },
     });
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (error: any) {
-    return new Response("ระบบขัดข้อง: " + error.message, { status: 500 });
+    return new Response("Error: " + error.message, { status: 500 });
   }
 }
